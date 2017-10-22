@@ -4915,6 +4915,10 @@ source-location."
                      " "
                      (sly-xref-button (sly-one-line-ify label) location)
                      "\n")
+		    (add-text-properties
+		     start (point)
+		     `(help-echo ,(format "sly-location: %s, label %s"
+					  location label)))
                     (add-text-properties start (point) (list 'sly-location location))))
   ;; Remove the final newline to prevent accidental window-scrolling
   (backward-delete-char 1))
