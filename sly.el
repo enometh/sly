@@ -634,7 +634,7 @@ that returns one such construct.")
                                           (n "-")
                                           (t "*"))))
          (package-name (and pkg
-                            (sly--pretty-package-name pkg)))
+                            (sly--pretty-package-name-1 pkg)))
          (pending (and conn
                        (length (sly-rex-continuations conn))))
          (sly-dbs (and conn (length (sly-db-buffers conn)))))
@@ -710,6 +710,12 @@ that returns one such construct.")
         ((string-match "^\"\\(.*\\)\"$" name)
          (match-string 1 name))
         (t name)))
+
+(defun sly--pretty-package-name-1 (name)
+  (let ((ret (sly--pretty-package-name name)))
+    (if (< (length ret) 6)
+	ret
+      (subseq ret 0 6))))
 
 (add-to-list 'mode-line-misc-info
              `(sly-mode (" [" sly--mode-line-format "] ")))
