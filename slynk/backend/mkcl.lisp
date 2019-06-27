@@ -677,7 +677,7 @@ SI:COMPILED-FUNCTION-FILE locations the tree under
                                  (file-position s pos)
                                  (skip-comments-and-whitespace s)
                                  (read-snippet s))))))))
-   `(:error (format nil "Source definition of ~S not found" obj))))
+   `(:error ,(format nil "Source definition of ~S not found" obj))))
 
 ;;;; Profiling
 ;;madhu 201128 - mk-defystem only
