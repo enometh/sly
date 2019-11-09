@@ -9,6 +9,7 @@
   (:sly-dependencies sly-mrepl
                      sly-autodoc
 		     sly-undefmethod
+		     sly-c-p-c
                      sly-fancy-inspector
                      sly-fancy-trace
                      sly-scratch
