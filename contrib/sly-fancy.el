@@ -8,6 +8,7 @@
   (:license "GPL")
   (:sly-dependencies sly-mrepl
                      sly-autodoc
+		     sly-undefmethod
                      sly-fancy-inspector
                      sly-fancy-trace
                      sly-scratch

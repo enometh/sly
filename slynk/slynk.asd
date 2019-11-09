@@ -119,3 +119,7 @@
 (defsystem :slynk/retro
   :depends-on (:slynk)
   :components ((:file "../contrib/slynk-retro")))
+
+(defsystem :slynk/undefmethod
+  :depends-on (:slynk)
+  :components ((:file "../contrib/slynk-undefmethod")))
