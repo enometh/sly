@@ -123,3 +123,7 @@
 (defsystem :slynk/undefmethod
   :depends-on (:slynk)
   :components ((:file "../contrib/slynk-undefmethod")))
+
+(defsystem :slynk/c-p-c
+  :depends-on (:slynk :slynk/arglists)
+  :components ((:file "../contrib/slynk-c-p-c")))
