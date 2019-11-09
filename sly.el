@@ -1102,10 +1102,12 @@ prefix argument controls the precise behaviour:
            (cond (interactive
                   (sly--read-interactive-args))
                  (t
-                  (if sly-lisp-implementations
+                  (if (and (symbolp command) sly-lisp-implementations)
                       (sly--lookup-lisp-implementation
                        sly-lisp-implementations
                        (or (and (symbolp command) command)
+			   (and (stringp command)
+				(file-name-nondirectory command))
                            sly-default-lisp
                            (car (car sly-lisp-implementations))))
                     (let ((command-and-args (if (listp command)
@@ -1159,7 +1161,9 @@ Helper for M-x sly"
                (functionp (cl-first arguments)))
       (setf arguments (funcall (cl-first arguments))))
     (cl-destructuring-bind ((prog &rest args) &rest keys) arguments
-      (cl-list* :name name :program prog :program-args args keys))))
+      (cl-list* :name name :program prog
+		:buffer (format "*sly-inferior-lisp for %s*" name)
+		 :program-args args keys))))
 
 (defun sly-inferior-lisp-buffer (sly-process-or-connection &optional pop-to-buffer)
   "Return PROCESS's buffer. With POP-TO-BUFFER, pop to it."
@@ -1300,10 +1304,25 @@ before."
 
 ;;; Starting the inferior Lisp and loading Slynk:
 
-(defun sly-maybe-start-lisp (program program-args env directory buffer)
+(defun sly-reinitialize-inferior-lisp-p (program program-args env buffer)
+  (let ((args (sly-inferior-lisp-args (get-buffer-process buffer))))
+    (and (equal (plist-get args :program) program)
+         (equal (plist-get args :program-args) program-args)
+         (equal (plist-get args :env) env)
+         (not (y-or-n-p "Create an additional *inferior-lisp*? ")))))
+
+(cl-defun sly-maybe-start-lisp (program program-args env directory buffer &aux conn)
   "Return a new or existing inferior lisp process."
   (cond ((not (comint-check-proc buffer))
          (sly-start-lisp program program-args env directory buffer))
+	;; only prompt if there is no active connection
+	((or (null (setq conn (cl-find (get-buffer-process buffer)
+				       sly-net-processes
+				       :key #'sly-inferior-process)))
+	     (sly-reinitialize-inferior-lisp-p program program-args env buffer))
+	 (when conn
+	   (sly-net-close conn "reusing connection"))
+         (get-buffer-process buffer))
         (t (sly-start-lisp program program-args env directory
                            (generate-new-buffer-name buffer)))))
 
@@ -2012,13 +2031,14 @@ This is automatically synchronized from Lisp.")
     ;; Rename the inferior lisp buffer if there is one (i.e. when
     ;; started via `M-x sly')
     ;;
+    (when nil
     (let ((inferior-lisp-buffer (sly-inferior-lisp-buffer
                                  (sly-process connection))))
       (when inferior-lisp-buffer
         (with-current-buffer inferior-lisp-buffer
           (sly--trampling-rename-buffer (sly-buffer-name
                                          :inferior-lisp
-                                         :connection connection)))))
+                                         :connection connection))))))
     (sly-message "Connected. %s" (sly-random-words-of-encouragement))))
 
 (defun sly-check-version (version conn)
