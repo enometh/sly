@@ -2738,16 +2738,20 @@ Debugged requests are ignored."
 (defvar sly-log-events t
   "*Log protocol events to the *sly-events* buffer.")
 
+(defvar sly-log-events-scroll-to-bottom nil)
+
 (defun sly-log-event (event process)
   "Record the fact that EVENT occurred in PROCESS."
   (when sly-log-events
     (with-current-buffer (sly--events-buffer process)
       ;; trim?
+      (save-excursion
       (when (> (buffer-size) 100000)
         (goto-char (/ (buffer-size) 2))
         (re-search-forward "^(" nil t)
         (delete-region (point-min) (point)))
-      (goto-char (point-max))
+      (when sly-log-events-scroll-to-bottom
+	(goto-char (point-max)))
       (unless (bolp) (insert "\n"))
       (cond ((and (stringp event)
                   (string-match "^;" event))
@@ -2755,7 +2759,8 @@ Debugged requests are ignored."
             (t
              (save-excursion
                (sly-pprint-event event (current-buffer)))))
-      (goto-char (point-max)))))
+      (when sly-log-events-scroll-to-bottom
+	(goto-char (point-max)))))))
 
 (defun sly-pprint-event (event buffer)
   "Pretty print EVENT in BUFFER with limited depth and width."
