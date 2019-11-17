@@ -138,7 +138,10 @@ If it's not in the cache, the cache will be updated asynchronously."
 ;; slynk:autodoc.  nil is returned if nothing reasonable could be
 ;; found.
 (defun sly-autodoc--parse-context ()
-  (and (not (sly-inside-string-or-comment-p))
+  ;; allow autodoc expansion in comments
+  (and (cl-letf (((symbol-function 'sly-inside-string-or-comment-p)
+		  (function sly-inside-string-p)))
+	 (not (sly-inside-string-or-comment-p)))
        (sly-parse-form-upto-point sly-autodoc-accuracy-depth)))
 
 (defun sly-autodoc--async (context multilinep)
