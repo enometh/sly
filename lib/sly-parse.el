@@ -102,10 +102,18 @@ that the character is not escaped."
                  ;; We're at a symbol, so make sure we get the whole symbol.
                  (sly-end-of-symbol)))
           (let ((pt (point)))
-            (unless (zerop (car ppss))
-              (ignore-errors (up-list (if max-levels (- max-levels) -5))))
-            (ignore-errors (down-list))
-            (sly-parse-form-until pt suffix)))))))
+;;            (unless (zerop (car ppss))
+;;              (ignore-errors (up-list (if max-levels (- max-levels) -5))))
+;;            (ignore-errors (down-list))
+;;            (sly-parse-form-until pt suffix)
+	  (and				;madhu 160302
+	   (ignore-errors (if (< emacs-major-version 25)
+			      (up-list (if max-levels (- max-levels) -5))
+			      (up-list (if max-levels (- max-levels) -5)
+				       nil (not (sly-inside-comment-p)))))
+	   (ignore-errors (down-list)))
+	  (sly-parse-form-until pt suffix)))))))
+
 
 ;;;; Test cases
 (defun sly-extract-context ()
