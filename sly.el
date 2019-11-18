@@ -4188,7 +4188,10 @@ the display stuff that we neither need nor want."
 
 A prefix argument(`C-u') inserts the result into the current
 buffer. A negative prefix argument (`M--') will sends it to the
-kill ring."
+kill ring.
+
+For complex interpretation of prefix arguments see SLY-EVAL-PRINT.
+"
   (interactive (list (sly-read-from-minibuffer "SLY Eval: ")))
   (cl-case current-prefix-arg
     ((nil)
@@ -4225,20 +4228,43 @@ kill ring."
      (run-hooks 'sly-transcript-stop-hook)
      (sly-message "Evaluation aborted on %s." condition))))
 
+(defun sly-eval-print-helper (result ncomment-chars dont-comment)
+  (cl-destructuring-bind (output value) result
+    (push-mark)
+    (let* ((start (point))
+           (ppss (syntax-ppss))
+           (string-or-comment-p (or (nth 3 ppss) (nth 4 ppss)))
+	   (block-comment-p (nth 7 ppss)))
+      (insert output (if (and string-or-comment-p (not block-comment-p))
+                         ""
+		       (if dont-comment ; comment-region adds a space
+			   " => "
+			 "=> "))
+	      value)
+      (unless (or dont-comment (and string-or-comment-p (not block-comment-p)))
+	(comment-region start (point) ncomment-chars)))))
+
 (defun sly-eval-print (string)
-  "Eval STRING in Lisp; insert any output and the result at point."
-  (sly-eval-async `(slynk:eval-and-grab-output ,string)
-    (lambda (result)
-      (cl-destructuring-bind (output value) result
-        (push-mark)
-        (let* ((start (point))
-               (ppss (syntax-ppss))
-               (string-or-comment-p (or (nth 3 ppss) (nth 4 ppss))))
-          (insert output (if string-or-comment-p
-                             ""
-                           " => ") value)
-          (unless string-or-comment-p
-            (comment-region start (point) 1)))))))
+  "Eval STRING in Lisp; insert any output and the result at point.
+
+Checks prefix-arg! If prefix-arg is 16 the inserted region is not commented.
+If prefix-arg is 0 the values are printed in one line.
+If the point is at the beginning of line two comment-chars are used
+to comment the region. Otherwise one comment char is used.
+
+If prefix arg is 64 send uncommented untruncated output to *sly-description*.
+"
+  (let ((ncomment-chars (if (bolp) 2 1))
+	(dont-comment (equal current-prefix-arg '(16)))
+	(send-to-sly-description  (equal current-prefix-arg '(64)))
+	(oneline-p (eql current-prefix-arg 0)))
+    (sly-eval-async `(slynk:eval-and-grab-output ,string (cl:or ,oneline-p ,send-to-sly-description))
+      (lambda (result)
+	(if send-to-sly-description
+	    (cl-destructuring-bind (output value) result
+	      (let ((string (concat output "" value)))
+		(sly-show-description string (sly-current-package))))
+	  (sly-eval-print-helper result ncomment-chars dont-comment))))))
 
 (defun sly-eval-save (string)
   "Evaluate STRING in Lisp and save the result in the kill ring."
