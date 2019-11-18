@@ -2081,14 +2081,19 @@ FN is only used if value is not a number"
         (finish-output)
         (echo-for-emacs values)))))
 
-(defslyfun eval-and-grab-output (string)
+(defslyfun eval-and-grab-output (string &optional oneline-p full)
   (with-buffer-syntax ()
     (with-retry-restart (:msg "Retry SLY evaluation request.")
       (let* ((s (make-string-output-stream))
              (*standard-output* s)
-             (values (multiple-value-list (eval (from-string string)))))
+             (values (multiple-value-list (eval (from-string string))))
+	     (*slynk-pprint-bindings*
+	      `(,@(if full '((*string-elision-length* nil)))
+	       ,@*slynk-pprint-bindings*)))
         (list (get-output-stream-string s)
-              (echo-for-emacs values))))))
+	      (if oneline-p
+		  (format nil "~{~S~^, ~}" values)
+		  (echo-for-emacs values)))))))
 
 (defun eval-region (string)
   "Evaluate STRING.
