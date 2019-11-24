@@ -314,10 +314,10 @@ global variabes in SLYNK."
     (make-pathname :directory
                    (append
                     (pathname-directory *fasl-directory*)
-                    (nthcdr (mismatch (dir-components *fasl-directory*)
-                                      (dir-components src-file)
-                                      :test #'equal)
-                            (dir-components src-file))))))
+                    (let ((n (mismatch (dir-components *source-directory*)
+                                       (dir-components src-file)
+                                       :test #'equal)))
+                      (if n (nthcdr n (dir-components src-file))))))))
 
 (defun require-module (module)
   (labels ((module () (string-upcase module))
@@ -327,10 +327,12 @@ global variabes in SLYNK."
       (let* ((src-file-name (substitute #\- #\/ (string-downcase module)))
              (src-file
                (some #'(lambda (dir)
-                         (probe-file (make-pathname
-                                      :name src-file-name
-                                      :type "lisp"
-                                      :defaults dir)))
+                         (let ((tentative (make-pathname
+                                           :name src-file-name
+                                           :type "lisp"
+                                           :defaults dir)))
+                           (and (probe-file tentative)
+                                tentative)))
                      *load-path*)))
         (assert src-file
                 nil
