@@ -9,7 +9,9 @@
 ;;; Administrivia
 
 (defpackage slynk-mkcl
-  (:use cl slynk-backend))
+  (:use cl slynk-backend slynk-source-file-cache)
+  (:import-from slynk-source-file-cache #:skip-comments-and-whitespace))
+;; for (unintern (find-symbol "SKIP-COMMENTS-AND-WHITESPACE" :slynk-mkcl) :slynk-mkcl)
 
 (in-package slynk-mkcl)
 
