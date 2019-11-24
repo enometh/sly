@@ -977,8 +977,11 @@ buffer. Interactively, DISPLAY-ACTION defaults to using
 `switch-to-buffer' unless the intended buffer is already visible
 in some window, in which case that window is selected."
   (interactive (list (lambda (buf)
-                       (let ((w (get-buffer-window buf)))
-                         (if w (select-window w) (switch-to-buffer buf))))))
+                       (let ((w (get-buffer-window buf 0)))
+                         (if w (progn (make-frame-visible (window-frame w))
+				      (raise-frame (window-frame w))
+				      (select-frame-set-input-focus (window-frame w)))
+			   (switch-to-buffer buf))))))
   (let* ((buffer
           (sly-mrepl--find-create (sly-current-connection))))
     (when display-action
