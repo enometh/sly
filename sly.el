@@ -4474,10 +4474,17 @@ The method removed is identified by QUALIFIERS and SPECIALIZERS."
 (defun sly-load-file (filename)
   "Load the Lisp file FILENAME."
   (interactive (list
-                (read-file-name "[sly] Load file: " nil nil
-                                nil (if (buffer-file-name)
-                                        (file-name-nondirectory
-                                         (buffer-file-name))))))
+                (let* ((buffer-file-name (buffer-file-name))
+		       (guess (if buffer-file-name
+				  (if (string-match "\\.system$" buffer-file-name)
+				      (file-name-nondirectory buffer-file-name)
+				    (file-name-sans-extension
+				     (file-name-nondirectory
+				      buffer-file-name))))))
+		  (if (fboundp 'ffap-prompter)
+		      (ffap-prompter guess)
+		    (read-file-name "Load file: "
+				    default-directory nil nil guess nil)))))
   (let ((lisp-filename (sly-to-lisp-filename (expand-file-name filename))))
     (sly-eval-with-transcript `(slynk:load-file ,lisp-filename))))
 
