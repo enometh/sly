@@ -49,7 +49,8 @@
   #+ecl '(slynk-source-path-parser slynk-source-file-cache
           (backend ecl))
   #+clasp '((backend clasp))
-  #+mkcl '((backend mkcl)))
+  #+mkcl '(slynk-source-path-parser slynk-source-file-cache
+          (backend mkcl)))
 
 (defparameter *implementation-features*
   '(:allegro :lispworks :sbcl :clozure :cmu :clisp :ccl :corman :cormanlisp
