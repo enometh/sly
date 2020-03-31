@@ -2762,7 +2762,8 @@ Debugged requests are ignored."
                          (when sly-outline-mode-in-events-buffer
                            (outline-minor-mode))
                          (set (make-local-variable 'sly-buffer-connection) process)
-                         (sly-mode 1))
+                         ;;(sly-mode 1)
+			 )
                        (process-put process 'sly--events-buffer buffer)
                        buffer))))
     buffer))
