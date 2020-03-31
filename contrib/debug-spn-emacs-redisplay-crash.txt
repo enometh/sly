@@ -1,0 +1,490 @@
+-*- Org -*-
+# [Sun, 22 Mar 2020 08:10:19 +0530, madhu]
+SLY-SHORTER-PACCKAGE-NICKNAMES-EMACS-KILLER - NOTES
+
+* Synopsis
+patching sly-search-buffer-package with this function aborts emacs on
+redisplay.
+#+BEGIN_SRC
+Thread 1 "emacs" hit Breakpoint 1, terminate_due_to_signal (sig=6,
+    backtrace_limit=40) at ../../src/emacs.c:371
+371       signal (sig, SIG_DFL);
+#0  terminate_due_to_signal (sig=6, backtrace_limit=40)
+    at ../../src/emacs.c:371
+#1  0x000000000061aacd in emacs_abort () at ../../src/sysdep.c:2448
+#2  0x00000000004ca88d in select_window (window=XIL(0x2d3a375),
+    norecord=XIL(0x30), inhibit_point_swap=false) at ../../src/window.c:544
+#3  0x00000000004caa4a in Fselect_window (window=XIL(0x2d3a375),
+    norecord=XIL(0x30)) at ../../src/window.c:630
+#4  0x0000000000474046 in gui_consider_frame_title (frame=XIL(0x2eb2255))
+    at ../../src/xdisp.c:12318
+#5  0x0000000000483e35 in redisplay_window (window=XIL(0x2d3a375),
+    just_this_one_p=false) at ../../src/xdisp.c:18940
+#+END_SRC
+
+* The killer: patched sly-search-buffer-package
+#+BEGIN_SRC elisp
+(defun sly-search-buffer-package ()
+  (let* ((case-fold-search t)
+	 (regexp (concat "^(\\(cl:\\|common-lisp:\\)?in-package\\>[ \t']*"
+			 "\\([^)]+\\)[ \t]*)"))
+	 (ret (save-excursion
+		(when (or (re-search-backward regexp nil t)
+			  (re-search-forward regexp nil t))
+		  (match-string-no-properties 2))))
+	 (pkg (if (and buffer-file-name ret)
+		  (sly-eval `(cl:let ((cl-user::x (slynk::parse-package ,ret)))
+				     (cl:if cl-user::x
+					    (slynk::shortest-package-nickname cl-user::x)))
+			    "CL-USER"))))
+    (or pkg ret)))
+#+END_SRC
+
+* How the modline is set
+The mode-line is set up like this:
+#+BEGIN_SRC elisp
+(add-to-list 'mode-line-misc-info
+             `(sly-mode (" [" sly--mode-line-format "] ")))
+#+END_SRC
+
+sly--mode-line-format is a function which (somewhere) calls
+sly-search-buffer-package. Which is the modified function.
+
+* Steps to crash emacs:
+** Set up the following files
+*** ~/1.l
+#+BEGIN_SRC lisp
+(in-package "CL-USER")
+(debug)
+#+END_SRC
+
+*** ~/1.el
+#+BEGIN_SRC elisp
+(setq make-backup-files nil)
+(setq display-buffer-mark-dedicated t)
+(setq switch-to-buffer-obey-display-actions t)
+(global-font-lock-mode t)
+(setq pop-up-frames t pop-up-windows nil)
+(set-window-dedicated-p nil t)
+
+
+(defvar $sly-root "~/.emacs.d/elpa/sly-20200108.1818/")
+(require 'cl)
+(unless (ignore-errors (find-library-name "sly"))
+  (assert (file-exists-p $sly-root))
+  (add-to-list 'load-path  (expand-file-name $sly-root)))
+(load-library "sly-autoloads")
+(setq sly-init-function 'sly-init-using-slynk-loader)
+(setq sly-lisp-implementations
+      '((ccl ("ccl"))			; first one is used with M-x sly
+	(clisp ("clisp"))
+	(ecl ("ecl"))
+	(mkcl ("mkcl"))))
+(sly)
+
+(eval-after-load 'sly-mrepl
+  '(progn
+     (define-key global-map (kbd "C-c z") 'sly-mrepl)
+     (define-key sly-mrepl-mode-map (kbd "C-c M-p")
+       'sly-mrepl-set-package)))
+
+(defun load-my-file ()
+  (when (file-exists-p "~/1.l")
+    (find-file "~/1.l"))
+  (sly-toggle-debug-on-slynk-error)
+  (sly-toggle-break-on-signals))
+
+(add-hook 'sly-connected-hook 'load-my-file)
+#+END_SRC
+
+**  Invoking the crash
+#+BEGIN_SRC sh
+emacs -Q -D -l ~/1.el
+#+END_SRC
+
+That should load sly and open 1.l. NOTE that 1.l should be opened
+**only After loading sly** - If 1.l is loaded before sly is loaded
+then autodoc throw errors because of a race condition.
+
+Next, position the cursor at the end of the (debug) statement in the
+buffer ~/1.l.  Type C-x C-e (M-x sly-eval-last-expression)
+
+This should pop up an sldb buffer in its own frame.
+
+Type `q' to dismiss the sldb buffer in its own frame which pops up.
+The frame is killed and emacs crashes on abort() in the middle of
+redisplay.
+
+* The problem
+`q' should call quit-window to get rid of the frame. However it kills
+the buffer.
+
+Typing `q' calls `sldb-quit' which does IPC with the inferior lisp
+process. It asynchronously calls a lisp form
+(slynk::throw-to-toplevel) to quit the lisp debugger.  The lisp side
+exits the debugger and sends sends an :abort form to emacs which emacs
+ignores.  Lisp sends another :debug-return form - which is the result
+of the evaluation that triggered the lisp debugger.  This is handled
+by emacs in `sly-db-exit'. The function looks like this:
+
+#+BEGIN_SRC elisp
+(defun sly-db-exit (thread _level &optional stepping)
+  "Exit from the debug level LEVEL."
+  (sly--when-let (sly-db (sly-db-find-buffer thread))
+    (with-current-buffer sly-db
+      (setq kill-buffer-query-functions
+            (remove 'sly-db-confirm-buffer-kill kill-buffer-query-functions))
+      (run-hooks 'sly-db-exit-hook)
+      (cond (stepping
+             (setq sly-db-level nil)
+             (run-with-timer 0.4 nil 'sly-db-close-step-buffer sly-db))
+            ((not (eq sly-db (window-buffer (selected-window))))
+             ;; A different window selection means an indirect,
+             ;; non-interactive exit, we just kill the sly-db buffer.
+             (kill-buffer))
+            (t
+             (quit-window t))))))
+#+END_SRC
+
+The kill-buffer branch but that is what it does.  The buffer is killed
+here. Taking the frame (and emacs) away with it.
+
+If the frame survives (say, because there is another window), I see a
+*Backtrace*
+
+Debugger entered--Lisp error: (wrong-type-argument window-live-p #<window 14>)
+  redisplay_internal\ \(C\ function\)()
+
+(The #<window 14> was the window in which I hit `q')
+
+* Undebuggable emacs
+sldb-quit-buffer is undebuggable. You cannot break into it. To be able
+to debug it you need print-statements which log to disk.
+
+#+BEGIN_SRC elisp
+(defun warn-foo (fmt &rest args)
+  (with-temp-buffer
+    (insert (apply #'format fmt  args))
+    (insert "\n")
+    (write-region (point-min) (point-max) "/dev/shm/emacs.log" t nil)))
+
+ (defun sly-db-exit (thread _level &optional stepping)
+   "Exit from the debug level LEVEL."
++   (warn-foo "sly-db-exit %s %s %s" thread _level stepping)
+   (sly--when-let (sly-db (sly-db-find-buffer thread))
+     (with-current-buffer sly-db
+       (setq kill-buffer-query-functions
+             (remove 'sly-db-confirm-buffer-kill kill-buffer-query-functions))
+       (run-hooks 'sly-db-exit-hook)
++      (warn-foo "sly-db-exit did run hooks")
+       (cond (stepping
++	     (warn-foo "sly-db-exit stepping")
+              (setq sly-db-level nil)
+              (run-with-timer 0.4 nil 'sly-db-close-step-buffer sly-db))
+             ((not (eq sly-db (window-buffer (selected-window))))
+              ;; A different window selection means an indirect,
+              ;; non-interactive exit, we just kill the sly-db buffer.
++	     (warn-foo "sly-db-exit kill-buffer sly-db=%s (window-buffer %s) = %s" sly-db (selected-window) (window-buffer (selected-window)))
+              (kill-buffer))
+             (t
++	     (warn-foo "sly-db-exit quit-window")
+              (quit-window t))))))
+#+END_SRC
+
+** patch backtrace.el
+The genius of lexical binding means all the patched functions have to
+be loded in a separate file and compiled and loaded
+
+*** ~/override-debugger.el
+#+BEGIN_SRC elisp
+;;  -*- lexical-binding: t -*-
+;; [Thu Mar 19 23:40:09 2020 +0530]
+;;  all this replication to make special-mode not read-only and
+;; to have  buffer-undo in backtrace.
+(require 'backtrace)
+(require 'debug)
+
+;; simple.el
+(define-derived-mode special-mode nil "Special"
+  "Parent major mode from which special major modes should inherit.
+
+A special major mode is intended to view specially formatted data
+rather than files.  These modes usually use read-only buffers."
+;; FOAD special-mode
+  (setq buffer-read-only nil))
+
+;; backtrace.el
+(define-derived-mode backtrace-mode special-mode "Backtrace"
+  "Generic major mode for examining an Elisp stack backtrace.
+This mode can be used directly, or other major modes can be
+derived from it, using `define-derived-mode'.
+
+In this major mode, the buffer contains some optional lines of
+header text followed by backtrace frames, each consisting of one
+or more whole lines.
+
+Letters in this mode do not insert themselves; instead they are
+commands.
+\\<backtrace-mode-map>
+\\{backtrace-mode-map}
+
+A mode which inherits from Backtrace mode, or a command which
+creates a backtrace-mode buffer, should usually do the following:
+
+ - Set `backtrace-revert-hook', if the buffer contents need
+   to be specially recomputed prior to `revert-buffer'.
+ - Maybe set `backtrace-insert-header-function' to a function to create
+   header text for the buffer.
+ - Set `backtrace-frames' (see below).
+ - Maybe modify `backtrace-view' (see below).
+ - Maybe set `backtrace-print-function'.
+
+A command which creates or switches to a Backtrace mode buffer,
+such as `ert-results-pop-to-backtrace-for-test-at-point', should
+initialize `backtrace-frames' to a list of `backtrace-frame'
+objects (`backtrace-get-frames' is provided for that purpose, if
+desired), and may optionally modify `backtrace-view', which is a
+plist describing the appearance of the backtrace.  Finally, it
+should call `backtrace-print'.
+
+`backtrace-print' calls `backtrace-insert-header-function'
+followed by `backtrace-print-frame', once for each stack frame."
+  :syntax-table emacs-lisp-mode-syntax-table
+  (when backtrace-fontify
+    (setq font-lock-defaults
+          '((backtrace-font-lock-keywords
+             backtrace-font-lock-keywords-1
+             backtrace-font-lock-keywords-2)
+            nil nil nil nil
+	    (font-lock-syntactic-face-function
+	     . lisp-font-lock-syntactic-face-function))))
+  (setq truncate-lines t)
+  ;; FOAD special-mode
+  ;;  (buffer-disable-undo)
+  (setq buffer-read-only nil)
+
+  ;; In debug.el, from 1998 to 2009 this was set to nil, reason stated
+  ;; was because of bytecode. Since 2009 it's been set to t, but the
+  ;; default is t so I think this isn't necessary.
+  ;; (set-buffer-multibyte t)
+  (setq-local revert-buffer-function #'backtrace-revert)
+  (setq-local filter-buffer-substring-function #'backtrace--filter-visible)
+  (setq-local indent-line-function 'lisp-indent-line)
+  (setq-local indent-region-function 'lisp-indent-region)
+  (add-hook 'xref-backend-functions #'backtrace--xref-backend nil t))
+
+;; debug.el
+(defun debug (&rest args)
+  "Enter debugger.  \\<debugger-mode-map>`\\[debugger-continue]' returns from the debugger.
+Arguments are mainly for use when this is called from the internals
+of the evaluator.
+
+You may call with no args, or you may pass nil as the first arg and
+any other args you like.  In that case, the list of args after the
+first will be printed into the backtrace buffer.
+
+If `inhibit-redisplay' is non-nil when this function is called,
+the debugger will not be entered."
+  (interactive)
+  (if inhibit-redisplay
+      ;; Don't really try to enter debugger within an eval from redisplay.
+      debugger-value
+    (let ((non-interactive-frame
+           (or noninteractive           ;FIXME: Presumably redundant.
+               ;; If we're in the initial-frame (where `message' just
+               ;; outputs to stdout) so there's no tty or GUI frame to
+               ;; display the backtrace and interact with it: just dump a
+               ;; backtrace to stdout.  This happens for example while
+               ;; handling an error in code from early-init.el with
+               ;; --debug-init.
+               (and (eq t (framep (selected-frame)))
+                    (equal "initial_terminal" (terminal-name)))))
+          ;; Don't let `inhibit-message' get in our way (especially important if
+          ;; `non-interactive-frame' evaluated to a non-nil value.
+          (inhibit-message nil))
+      (unless non-interactive-frame
+        (message "Entering debugger..."))
+      (let (debugger-value
+	    (debugger-previous-state
+             (if (get-buffer "*Backtrace*")
+                 (with-current-buffer (get-buffer "*Backtrace*")
+                   (debugger--save-buffer-state))))
+            (debugger-args args)
+	    (debugger-buffer (get-buffer-create "*Backtrace*"))
+	    (debugger-old-buffer (current-buffer))
+	    (debugger-window nil)
+	    (debugger-step-after-exit nil)
+            (debugger-will-be-back nil)
+	    ;; Don't keep reading from an executing kbd macro!
+	    (executing-kbd-macro nil)
+	    ;; Save the outer values of these vars for the `e' command
+	    ;; before we replace the values.
+	    (debugger-outer-match-data (match-data))
+	    (debugger-with-timeout-suspend (with-timeout-suspend)))
+        ;; Set this instead of binding it, so that `q'
+        ;; will not restore it.
+        (setq overriding-terminal-local-map nil)
+        ;; Don't let these magic variables affect the debugger itself.
+        (let ((last-command nil) this-command track-mouse
+	      (inhibit-trace t)
+	      unread-command-events
+	      unread-post-input-method-events
+	      last-input-event last-command-event last-nonmenu-event
+	      last-event-frame
+	      overriding-local-map
+	      load-read-function
+	      ;; If we are inside a minibuffer, allow nesting
+	      ;; so that we don't get an error from the `e' command.
+	      (enable-recursive-minibuffers
+	       (or enable-recursive-minibuffers (> (minibuffer-depth) 0)))
+	      (standard-input t) (standard-output t)
+	      inhibit-redisplay
+	      (cursor-in-echo-area nil)
+	      (window-configuration (current-window-configuration)))
+	  (unwind-protect
+	      (save-excursion
+	        (when (eq (car debugger-args) 'debug)
+		  ;; Skip the frames for backtrace-debug, byte-code,
+		  ;; debug--implement-debug-on-entry and the advice's `apply'.
+		  (backtrace-debug 4 t)
+		  ;; Place an extra debug-on-exit for macro's.
+		  (when (eq 'lambda (car-safe (cadr (backtrace-frame 4))))
+		    (backtrace-debug 5 t)))
+                (with-current-buffer debugger-buffer
+                  (unless (derived-mode-p 'debugger-mode)
+	            (debugger-mode))
+	          (debugger-setup-buffer debugger-args)
+	          (when non-interactive-frame
+		    ;; If the backtrace is long, save the beginning
+		    ;; and the end, but discard the middle.
+                    (let ((inhibit-read-only t))
+		      (when (> (count-lines (point-min) (point-max))
+			       debugger-batch-max-lines)
+		        (goto-char (point-min))
+		        (forward-line (/ debugger-batch-max-lines 2))
+		        (let ((middlestart (point)))
+		          (goto-char (point-max))
+		          (forward-line (- (/ debugger-batch-max-lines 2)))
+		          (delete-region middlestart (point)))
+		        (insert "...\n")))
+		    (message "%s" (buffer-string))
+		    (kill-emacs -1)))
+	        (pop-to-buffer
+	         debugger-buffer
+	         `((display-buffer-reuse-window
+		    display-buffer-in-previous-window
+		    display-buffer-below-selected)
+		   . ((window-min-height . 10)
+                      (window-height . fit-window-to-buffer)
+		      ,@(when (and (window-live-p debugger-previous-window)
+				   (frame-visible-p
+				    (window-frame debugger-previous-window)))
+		          `((previous-window . ,debugger-previous-window))))))
+	        (setq debugger-window (selected-window))
+	        (if (eq debugger-previous-window debugger-window)
+		    (when debugger-jumping-flag
+		      ;; Try to restore previous height of debugger
+		      ;; window.
+		      (condition-case nil
+			  (window-resize
+			   debugger-window
+			   (- debugger-previous-window-height
+			      (window-total-height debugger-window)))
+		        (error nil)))
+		  (setq debugger-previous-window debugger-window))
+	        (message "")
+	        (let ((standard-output nil)
+		      ;; FOAD special-mode
+		      (buffer-read-only nil))
+		  (message "")
+		  ;; Make sure we unbind buffer-read-only in the right buffer.
+		  (save-excursion
+		    (recursive-edit))))
+	    (when (and (window-live-p debugger-window)
+		       (eq (window-buffer debugger-window) debugger-buffer))
+	      ;; Record height of debugger window.
+	      (setq debugger-previous-window-height
+		    (window-total-height debugger-window)))
+	    (if debugger-will-be-back
+	        ;; Restore previous window configuration (Bug#12623).
+	        (set-window-configuration window-configuration)
+	      (when (and (window-live-p debugger-window)
+		         (eq (window-buffer debugger-window) debugger-buffer))
+	        (progn
+		  ;; Unshow debugger-buffer.
+		  (quit-restore-window debugger-window debugger-bury-or-kill)
+		  ;; Restore current buffer (Bug#12502).
+		  (set-buffer debugger-old-buffer)))
+              ;; Forget debugger window, it won't be back (Bug#17882).
+              (setq debugger-previous-window nil))
+            ;; Restore previous state of debugger-buffer in case we were
+            ;; in a recursive invocation of the debugger, otherwise just
+            ;; erase the buffer.
+	    (when (buffer-live-p debugger-buffer)
+	      (with-current-buffer debugger-buffer
+	        (if debugger-previous-state
+                    (debugger--restore-buffer-state debugger-previous-state)
+                  (setq backtrace-insert-header-function nil)
+                  (setq backtrace-frames nil)
+                  (backtrace-print))))
+	    (with-timeout-unsuspend debugger-with-timeout-suspend)
+	    (set-match-data debugger-outer-match-data)))
+        (setq debug-on-next-call debugger-step-after-exit)
+        debugger-value))))
+#+END_SRC
+
+*** diff -Naur
+#+BEGIN_SRC diff
+--- emacs-debugger.el
++++ override-debugger.el
+@@ -11,7 +11,8 @@
+ 
+ A special major mode is intended to view specially formatted data
+ rather than files.  These modes usually use read-only buffers."
+-  (setq buffer-read-only t))
++;; FOAD special-mode
++  (setq buffer-read-only nil))
+ 
+ ;; backtrace.el
+ (define-derived-mode backtrace-mode special-mode "Backtrace"
+@@ -59,7 +60,10 @@
+ 	    (font-lock-syntactic-face-function
+ 	     . lisp-font-lock-syntactic-face-function))))
+   (setq truncate-lines t)
+-  (buffer-disable-undo)
++  ;; FOAD special-mode
++  ;;  (buffer-disable-undo)
++  (setq buffer-read-only nil)
++
+   ;; In debug.el, from 1998 to 2009 this was set to nil, reason stated
+   ;; was because of bytecode. Since 2009 it's been set to t, but the
+   ;; default is t so I think this isn't necessary.
+@@ -191,7 +195,8 @@
+ 		  (setq debugger-previous-window debugger-window))
+ 	        (message "")
+ 	        (let ((standard-output nil)
+-		      (buffer-read-only t))
++		      ;; FOAD special-mode
++		      (buffer-read-only nil))
+ 		  (message "")
+ 		  ;; Make sure we unbind buffer-read-only in the right buffer.
+ 		  (save-excursion
+#+END_SRC
+
+
+* #+nil debugging junk
+#+BEGIN_SRC elisp
+;; swank-repl::package-string-for-prompt ->
+;; (slime-def-connection-var slime-lisp-package-prompt-string)
+(when nil
+(sly-eval `(cl:let ((cl-user::x (slynk::parse-package "COMMON-LISP-USER")))
+		   (cl:if cl-user::x
+			  (slynk::shortest-package-nickname cl-user::x)))
+	  "CL-USER")
+(sly-eval `(cl:let ((cl-user::x (cl::concatenate 'cl:string "COMMON-LISP-USER")))
+		   (cl:if cl-user::x cl-user::x))
+	  "CL-USER")
+(sly-eval `(barf:error "FOO")
+	  "CL-USER"))
+#+END_SRC
+
