@@ -1021,7 +1021,7 @@
              (serve-event:serve-event timeout)
              (loop for fd in active-fds collect (cdr (assoc fd fd-stream-alist))))))
     (loop
-       (cond ((check-slime-interrupts) (return :interrupt))
+       (cond ((check-sly-interrupts) (return :interrupt))
              (timeout (return (poll-streams streams 0)))
              (t
               (when-let (ready (poll-streams streams 0.2))
@@ -1031,7 +1031,7 @@
 (defimplementation wait-for-input (streams &optional timeout)
   (assert (member timeout '(nil t)))
   (loop
-   (cond ((check-slime-interrupts) (return :interrupt))
+   (cond ((check-sly-interrupts) (return :interrupt))
          (timeout (return (remove-if-not #'listen streams)))
          (t
           (let ((ready (remove-if-not #'listen streams)))
