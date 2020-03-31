@@ -911,6 +911,7 @@ buffer. Interactively, DISPLAY-ACTION defaults to using
 in some window, in which case that window is selected."
   (interactive (list (lambda (buf)
                        (let ((w (get-buffer-window buf)))
+			 ;;madhu - really want to use pop-to-buffer
                          (if w (select-window w) (switch-to-buffer buf))))))
   (let* ((buffer
           (sly-mrepl--find-create (sly-current-connection))))
