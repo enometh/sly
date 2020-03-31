@@ -2578,6 +2578,7 @@ Debugged requests are ignored."
            (cl-assert thread)
            (sly-db-setup thread level condition restarts frames conts))
           ((:debug-return thread level stepping)
+;;	   (warn "handling debug return")
            (cl-assert thread)
            (sly-db-exit thread level stepping))
           ((:emacs-interrupt thread)
@@ -5657,21 +5658,32 @@ sufficiently initialized, and this function does nothing."
 (defvar sly-db-exit-hook nil
   "Hooks run in the debugger buffer just before exit")
 
+(defun warn-foo (fmt &rest args)
+  (with-temp-buffer
+    (insert (apply #'format fmt  args))
+    (insert "\n")
+    (write-region (point-min) (point-max) "/dev/shm/log" t nil)))
+
 (defun sly-db-exit (thread _level &optional stepping)
   "Exit from the debug level LEVEL."
+;;  (warn-foo "sly-db-exit %s %s %s" thread _level stepping)
   (sly--when-let (sly-db (sly-db-find-buffer thread))
     (with-current-buffer sly-db
       (setq kill-buffer-query-functions
             (remove 'sly-db-confirm-buffer-kill kill-buffer-query-functions))
       (run-hooks 'sly-db-exit-hook)
+;;      (warn-foo "sly-db-exit did run hooks")
       (cond (stepping
+;;	     (warn-foo "sly-db-exit stepping")
              (setq sly-db-level nil)
              (run-with-timer 0.4 nil 'sly-db-close-step-buffer sly-db))
             ((not (eq sly-db (window-buffer (selected-window))))
              ;; A different window selection means an indirect,
              ;; non-interactive exit, we just kill the sly-db buffer.
+;;	     (warn-foo "sly-db-exit kill-buffer sly-db=%s (window-buffer %s) = %s" sly-db (selected-window) (window-buffer (selected-window)))
              (kill-buffer))
             (t
+;;	     (warn-foo "sly-db-exit quit-window")
              (quit-window t))))))
 
 (defun sly-db-close-step-buffer (buffer)
