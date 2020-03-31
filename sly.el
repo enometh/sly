@@ -2786,7 +2786,8 @@ Debugged requests are ignored."
                          (when (fboundp 'lisp-data-mode) ; Emacs >= 28 only
                            (funcall 'lisp-data-mode))
                          (set (make-local-variable 'sly-buffer-connection) process)
-                         (sly-mode 1))
+                         ;;(sly-mode 1)
+			 )
                        (process-put process 'sly--events-buffer buffer)
                        buffer))))
     buffer))
