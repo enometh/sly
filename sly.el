@@ -4200,19 +4200,30 @@ kill ring."
      (sly-message "Evaluation aborted on %s." condition))))
 
 (defun sly-eval-print (string)
-  "Eval STRING in Lisp; insert any output and the result at point."
-  (sly-eval-async `(slynk:eval-and-grab-output ,string)
+  "Eval STRING in Lisp; insert any output and the result at point.
+
+Checks prefix-arg! If prefix-arg is 16 the inserted region is not commented.
+If prefix-arg is 0 the values are printed in one line.
+If the point is at the beginning of line two comment-chars are used
+to comment the region. Otherwise one comment char is used."
+  (let ((ncomment-chars (if (bolp) 2 1))
+	(dont-comment (equal current-prefix-arg '(16)))
+	(oneline-p (eql current-prefix-arg 0)))
+  (sly-eval-async `(slynk:eval-and-grab-output ,string ,oneline-p)
     (lambda (result)
       (cl-destructuring-bind (output value) result
         (push-mark)
         (let* ((start (point))
                (ppss (syntax-ppss))
                (string-or-comment-p (or (nth 3 ppss) (nth 4 ppss))))
-          (insert output (if string-or-comment-p
+	  (insert output (if string-or-comment-p
                              ""
-                           " => ") value)
-          (unless string-or-comment-p
-            (comment-region start (point) 1)))))))
+			   (if dont-comment ; comment-region adds a space
+			       " => "
+			     "=> "))
+		  value)
+          (unless (or (not dont-comment) string-or-comment-p))
+            (comment-region start (point) ncomment-chars)))))))
 
 (defun sly-eval-save (string)
   "Evaluate STRING in Lisp and save the result in the kill ring."
