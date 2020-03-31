@@ -5449,11 +5449,13 @@ PREDICATE is executed in the buffer to test."
 
 (defun sly-db-find-buffer (thread &optional connection)
   (let ((connection (or connection (sly-connection))))
-    (cl-find-if (lambda (buffer)
-                  (with-current-buffer buffer
-                    (and (eq sly-buffer-connection connection)
-                         (eq sly-current-thread thread))))
-                (sly-db-buffers))))
+    (or					; or just the first debugger
+     (cl-find-if (lambda (buffer)
+                   (with-current-buffer buffer
+                     (and (eq sly-buffer-connection connection)
+                          (eq sly-current-thread thread))))
+                 (sly-db-buffers))
+     (car (sly-db-buffers)))))
 
 (defun sly-db-pop-to-debugger-maybe (&optional _button)
   "Maybe pop to *sly-db* buffer for current context."
