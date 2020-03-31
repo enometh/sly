@@ -96,6 +96,7 @@ for output printed to the REPL (not for evaluation results)")
     (define-key map (kbd "M-n")     'sly-mrepl-next-input-or-button)
     (define-key map (kbd "C-M-p")     'sly-button-backward)
     (define-key map (kbd "C-M-n")     'sly-button-forward)
+    (define-key map "\er" 	  'comint-history-isearch-backward-regexp)
     map))
 
 (defvar sly-mrepl-pop-sylvester 'on-connection)
@@ -148,7 +149,8 @@ for output printed to the REPL (not for evaluation results)")
                 (comint-input-sender sly-mrepl--input-sender)
                 (comint-output-filter-functions nil)
                 (comint-input-filter-functions nil)
-                (comint-history-isearch dwim)
+                (comint-history-isearch nil ;dwim
+					)
                 (comint-input-ignoredups t)
                 (comint-prompt-read-only t)
                 (comint-process-echoes nil)
@@ -835,6 +837,10 @@ history entry navigated to."
   (when (overlayp sly-mrepl--eli-input-overlay)
     (delete-overlay sly-mrepl--eli-input-overlay)
     (setq sly-mrepl--eli-input-overlay nil))
+  ;;; WTF does this get reset to t even after teardown? we set this to
+  ;;; nil in the mode definition so C-r will always isearch and M-r
+  ;;; will isearch the command history and have to keep it that way.
+  (setq comint-history-isearch nil)
   (sly-mrepl--keep-eli-input-maybe))
 
 
