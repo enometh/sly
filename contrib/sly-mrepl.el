@@ -988,7 +988,8 @@ in some window, in which case that window is selected."
 				      (raise-frame (window-frame w))
 				      (select-frame-set-input-focus (window-frame w)))
 			   (switch-to-buffer buf))))))
-  (let* ((buffer
+  (let* ((default-directory "~")
+	 (buffer
           (sly-mrepl--find-create (sly-current-connection))))
     (when display-action
       (funcall display-action buffer))
