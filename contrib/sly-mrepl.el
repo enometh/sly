@@ -919,7 +919,8 @@ in some window, in which case that window is selected."
                        (let ((w (get-buffer-window buf)))
 			 ;;madhu - really want to use pop-to-buffer
                          (if w (select-window w) (switch-to-buffer buf))))))
-  (let* ((buffer
+  (let* ((default-directory "~")
+	 (buffer
           (sly-mrepl--find-create (sly-current-connection))))
     (when display-action
       (funcall display-action buffer))
