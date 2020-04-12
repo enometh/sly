@@ -6548,6 +6548,7 @@ was called originally."
   "Display a list of all connections."
   (interactive)
   (sly-with-popup-buffer ((sly-buffer-name :connections)
+			  :select t
                           :mode 'sly-connection-list-mode)
     (sly-update-connection-list)))
 
