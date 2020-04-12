@@ -1102,7 +1102,8 @@ prefix argument controls the precise behaviour:
     (sly-message "Switching to `%s'" (sly-connection-name target))
     (sly-connection-list-default-action target)
     (cl-return-from sly nil))
-  (let ((command (or command inferior-lisp-program))
+  (let ((default-directory "~")
+	(command (or command inferior-lisp-program))
         (sly-net-coding-system (or coding-system sly-net-coding-system)))
     (apply #'sly-start
            (cond (interactive
