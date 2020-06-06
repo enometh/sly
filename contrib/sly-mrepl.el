@@ -914,17 +914,30 @@ arglist for the most recently enclosed macro or function."
 If supplied, DISPLAY-ACTION is called on the
 buffer. Interactively, DISPLAY-ACTION defaults to using
 `switch-to-buffer' unless the intended buffer is already visible
-in some window, in which case that window is selected."
+in some window, in which case that window is selected.
+
+With a prefix arg always prompt for a new connection.
+If arg is `-' prompt for the lisp program and start a new connection. With a
+C-u prefix arg of (4), connect to a running slime. With any other prefix arg,
+prompt and start a lisp from sly-lisp-implementations.
+
+Set `sly-auto-start' to start a lisp if there is no connection.
+"
   (interactive (list (lambda (buf)
                        (let ((w (get-buffer-window buf)))
 			 ;;madhu - really want to use pop-to-buffer
                          (if w (select-window w) (switch-to-buffer buf))))))
   (let* ((default-directory "~")
-	 (buffer
-          (sly-mrepl--find-create (sly-current-connection))))
-    (when display-action
-      (funcall display-action buffer))
-    buffer))
+	 (interactive-p (called-interactively-p 'any )))
+    ;; (call-interactively-p retard-p retard! edebug retard!)
+    (cond ((and interactive-p (equal current-prefix-arg '(4)))
+	   (call-interactively 'sly-connect))
+	  ((and interactive-p current-prefix-arg)
+	   (call-interactively 'sly nil (this-command-keys-vector)))
+	  (t (let ((buffer
+		    (sly-mrepl--find-create (sly-current-connection))))
+	       (when display-action
+		 (funcall display-action buffer)))))))
 
 (defun sly-mrepl-on-connection ()
   (let* ((inferior-buffer

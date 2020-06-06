@@ -1114,6 +1114,12 @@ prefix argument controls the precise behaviour:
 (defvar sly-inferior-lisp-program-history '()
   "History list of command strings.  Used by M-x sly.")
 
+;; ;madhu r3 - see `sly-auto-start'. when `current-prefix-arg' is `-'
+;; prompt the user to select a lisp pathname from
+;; `sly-inferior-lisp-program-history'. This is the branch taken when
+;; C-c z `slime-mrepl' is called without any prefix arguments and
+;; there is no lisp connection.
+
 (defun sly--read-interactive-args ()
   "Return the list of args which should be passed to `sly-start'.
 Helper for M-x sly"
@@ -1126,7 +1132,8 @@ Helper for M-x sly"
                       (split-string-and-unquote
                        (sly--guess-inferior-lisp-program t))
                     (list :program program :program-args args)))))
-        ((eq current-prefix-arg '-)
+        (;;r3 (eq current-prefix-arg '-)
+	 (not (eq current-prefix-arg '-))
          (let ((key (sly-completing-read
                      "Lisp name: " (mapcar (lambda (x)
                                              (list (symbol-name (car x))))
@@ -1137,8 +1144,9 @@ Helper for M-x sly"
          (cl-destructuring-bind (program &rest program-args)
              (split-string-and-unquote
               (read-shell-command "[sly] Run lisp: "
-                                  (sly--guess-inferior-lisp-program nil)
-                                  'sly-inferior-lisp-program-history))
+				  ;;r3 (sly--guess-inferior-lisp-program nil)
+				  (car sly-inferior-lisp-program-history)
+                                  '(sly-inferior-lisp-program-history . 1)))
            (let ((coding-system
                   (if (eq 16 (prefix-numeric-value current-prefix-arg))
                       (read-coding-system "[sly] Set sly-coding-system: "
@@ -1262,6 +1270,7 @@ before."
                        nil nil '(sly-connect-port-history . 1)))
                      nil t))
   (when (and interactive-p
+	     nil ;; r3 - do not prompt! we can close them explicitly
              sly-net-processes
              current-prefix-arg
              (sly-y-or-n-p "[sly] Close all connections first? "))
@@ -1840,15 +1849,31 @@ This doesn't mean it will connect right after SLY is loaded."
                  (const always)
                  (const ask)))
 
+;; ;madhu-r3: C-u C-c z `slime-mrepl' should connect to a slynk server
+;; running at localhost 4005.  C-c z `slime-repl' should prompt for a
+;; lisp pathname (using `sly-inferior-lisp-program-history').
+
+;; ;madhu-r3: `sly-auto-start' calls #'sly interactively - so we can go
+;; through the #'sly's prompting mechanism.  when C-c z `slime-mrepl'
+;; is called without any prefix args `sly--read-interactive-args' gets
+;; `-' as `current-prefix-arg'.  `sly--read-interactive-args' should
+;; handle the `-' and prompt the user using
+;; `sly-inferior-lisp-program-history'.
+
 (defun sly-auto-start ()
   (cond ((or (eq sly-auto-start 'always)
              (and (eq sly-auto-start 'ask)
                   (sly-y-or-n-p "No connection.  Start SLY? ")))
          (save-window-excursion
-           (sly)
-           (while (not (sly-current-connection))
+	   (let ((default-directory "~/")
+		 (sly-auto-start 'never))
+	     ;; madhu r3
+	     (if (equal current-prefix-arg '(4))
+		 (sly-connect "127.0.0.1" 4005)
+	       (call-interactively 'sly))
+	     (while (not (sly-current-connection))
              (sleep-for 1))
-           (sly-connection)))
+	     (sly-connection))))
         (t nil)))
 
 (cl-defmacro sly-with-connection-buffer ((&optional process) &rest body)
