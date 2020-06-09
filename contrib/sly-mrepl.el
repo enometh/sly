@@ -303,7 +303,8 @@ for output printed to the REPL (not for evaluation results)")
                 (when (and (eq major-mode 'sly-mrepl-mode)
                            (eq sly-buffer-connection process))
                   (sly-mrepl--teardown (process-get process
-                                                    'sly-net-close-reason))))))
+                                                    'sly-net-close-reason)
+				       t)))))
 
 (defun sly-mrepl--process () (get-buffer-process (current-buffer))) ;stupid
 

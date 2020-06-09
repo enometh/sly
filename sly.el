@@ -1839,7 +1839,13 @@ Used for all Lisp communication, except when overridden by
   "Return the connection to use for Lisp interaction.
 Return nil if there's no connection."
   (or sly-dispatching-connection
-      sly-buffer-connection
+      (let ((c sly-buffer-connection))
+	(when c
+	  (if (process-live-p c)
+	      c
+	    (message "%s: resetting stale sly-buffer-connection: %s"
+		  (current-buffer) sly-buffer-connection)
+	    (setq sly-buffer-connection nil))))
       sly-default-connection))
 
 (defun sly-connection ()
@@ -2721,11 +2727,12 @@ Debugged requests are ignored."
 
 (defun sly-close-channel (channel)
   (setf (sly-channel.operations channel) 'closed-channel)
-  (let ((probe (assq (sly-channel.id channel)
-                     (and (sly-current-connection)
-                          (sly-channels)))))
+  (let* ((sly-auto-start 'never)
+	 (probe (assq (sly-channel.id channel)
+		      (and (sly-current-connection)
+			   (sly-channels)))))
     (cond (probe (setf (sly-channels) (delete probe (sly-channels))))
-          (t (error "Can't close invalid channel: %s" channel)))))
+          (t (message "Can't close invalid channel: %s" channel)))))
 
 (defun sly-find-channel (id)
   (cdr (assq id (sly-channels))))
