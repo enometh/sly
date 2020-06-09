@@ -3634,6 +3634,7 @@ Several kinds of locations are supported:
              | (:error <message>)
 
 <buffer>   ::= (:file <filename>)
+             | (:etags-file <etags-file>
              | (:buffer <buffername>)
              | (:buffer-and-file <buffername> <filename>)
              | (:source-form <string>)
@@ -3980,7 +3981,55 @@ For insertion in the `compilation-mode' buffer"
   `(:location (:file ,file-name) (:position ,position)
               ,(when hints `(:hints ,hints))))
 
+(defun sly-etags-to-locations (name)
+  "Search for definitions matching `name' in the currently active
+tags table. Return a possibly empty list of slime-locations."
+  (let ((locs '()))
+    (save-excursion
+      (let ((first-time t))
+        (while (visit-tags-table-buffer (not first-time))
+          (setq first-time nil)
+          (goto-char (point-min))
+          (while (search-forward name nil t)
+            (beginning-of-line)
+            (cl-destructuring-bind (hint line &rest pos) (etags-snarf-tag)
+              (unless (eq hint t) ; hint==t if we are in a filename line
+                (push `(:location (:file ,(expand-file-name (file-of-tag)))
+                                  (:line ,line)
+                                  (:snippet ,hint))
+                      locs))))))
+      (nreverse locs))))
 
+(defun sly-etags-definitions (name)
+  "Search definitions matching NAME in the tags file.
+The result is a (possibly empty) list of definitions."
+  (mapcar (lambda (loc)
+            (make-sly-xref :dspec (cl-second (sly-location.hints loc))
+			   :location loc))
+          (sly-etags-to-locations name)))
+
+(defun sly-postprocess-xref (original-xref)
+  "Process (for normalization purposes) an Xref comming directly
+from SLYNK before the rest of Sly sees it. In particular,
+convert ETAGS based xrefs to actual file+position based
+locations."
+  (if (not (sly-xref-has-location-p original-xref))
+      (list original-xref)
+    (let ((loc (sly-xref.location original-xref)))
+      (sly-dcase (sly-location.buffer loc)
+        ((:etags-file tags-file)
+         (sly-dcase (sly-location.position loc)
+           ((:tag &rest tags)
+            (visit-tags-table tags-file)
+            (mapcar (lambda (xref)
+                      (let ((old-dspec (sly-xref.dspec original-xref))
+                            (new-dspec (sly-xref.dspec xref)))
+                        (setf (sly-xref.dspec xref)
+                              (format "%s: %s" old-dspec new-dspec))
+                        xref))
+                    (cl-mapcan #'sly-etags-definitions tags)))))
+        (t
+         (list original-xref))))))
 
 (defun sly-edit-definition (&optional name method)
   "Lookup the definition of the name at point.
@@ -3994,7 +4043,7 @@ new frame."
                          (sly-read-symbol-name "Edit Definition of: "))))
   ;; The hooks might search for a name in a different manner, so don't
   ;; ask the user if it's missing before the hooks are run
-  (let ((xrefs (sly-eval `(slynk:find-definitions-for-emacs ,name))))
+  (let ((xrefs (mapcan 'sly-postprocess-xref (sly-eval `(slynk:find-definitions-for-emacs ,name)))))
     (unless xrefs
       (error "No known definition for: %s (in %s)"
              name (sly-current-package)))
