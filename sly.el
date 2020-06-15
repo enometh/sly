@@ -4361,7 +4361,7 @@ Use `sly-re-evaluate-defvar' if the from starts with '(defvar'"
   (interactive)
   (let ((form (apply #'buffer-substring-no-properties
                      (sly-region-for-defun-at-point))))
-    (cond ((string-match "^(defvar " form)
+    (cond ((string-match "^(defvar[\t ]+" form)
            (sly-re-evaluate-defvar form))
           (t
            (sly-interactive-eval form)))))
