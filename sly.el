@@ -1099,7 +1099,7 @@ prefix argument controls the precise behaviour:
            (cond (interactive
                   (sly--read-interactive-args))
                  (t
-                  (if sly-lisp-implementations
+                  (if (and (symbolp command) sly-lisp-implementations)
                       (sly--lookup-lisp-implementation
                        sly-lisp-implementations
                        (or (and (symbolp command) command)
