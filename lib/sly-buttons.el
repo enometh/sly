@@ -95,9 +95,61 @@
 (sly-button-define-part-action sly-button-show-source  "Show Source"   (kbd "v"))
 (sly-button-define-part-action sly-button-goto-source  "Go To Source"  (kbd "."))
 
+(defun  make-text-button-emacs-27 (beg end &rest properties)
+  "Make a button from BEG to END in the current buffer.
+The remaining arguments form a plist of PROPERTY VALUE pairs,
+specifying properties to add to the button.
+In addition, the keyword argument :type may be used to specify a
+button-type from which to inherit other properties; see
+`define-button-type'.
+
+This function is like `make-button', except that the button is actually
+part of the text instead of being a property of the buffer.  That is,
+this function uses text properties, the other uses overlays.
+Creating large numbers of buttons can also be somewhat faster
+using `make-text-button'.  Note, however, that if there is an existing
+face property at the site of the button, the button face may not be visible.
+You may want to use `make-button' in that case.
+
+If the property `button-data' is present, it will later be used
+as the argument for the `action' callback function instead of the
+default argument, which is the button itself.
+
+BEG can also be a string, in which case it is made into a button.
+
+Also see `insert-text-button'."
+  (let ((object nil)
+        (type-entry
+	 (or (plist-member properties 'type)
+	     (plist-member properties :type))))
+    (when (stringp beg)
+      (setq object beg beg 0 end (length object)))
+    ;; Disallow setting the `category' property directly.
+    (when (plist-get properties 'category)
+      (error "Button `category' property may not be set directly"))
+    (if (null type-entry)
+	;; The user didn't specify a `type' property, use the default.
+	(setq properties (cons 'category (cons 'default-button properties)))
+      ;; The user did specify a `type' property.  Translate it into a
+      ;; `category' property, which is what's actually used by
+      ;; text-properties for inheritance.
+      (setcar type-entry 'category)
+      (setcar (cdr type-entry)
+              (button-category-symbol (cadr type-entry))))
+    ;; Now add all the text properties at once.
+    (add-text-properties beg end
+                         ;; Each button should have a non-eq `button'
+                         ;; property so that next-single-property-change can
+                         ;; detect boundaries reliably.
+                         (cons 'button (cons (list t) properties))
+                         object)
+    ;; Return something that can be used to get at the button.
+    (or object beg)))
+
+
 (defun sly--make-text-button (beg end &rest properties)
   "Just like `make-text-button', but add sly-specifics."
-  (apply #'make-text-button beg end
+  (apply #'make-text-button-emacs-27 beg end
          'sly-connection (sly-current-connection)
          properties))
 
