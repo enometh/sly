@@ -82,12 +82,14 @@ or \"Symbol-Table.text\".")
     name))
 
 ;; Choose the symbol at point or read symbol-name from the minibuffer.
-(defun common-lisp-hyperspec-read-symbol-name (&optional symbol-at-point)
+(defun common-lisp-hyperspec-read-symbol-name (&optional symbol-at-point confirm)
   (let* ((symbol-at-point (or symbol-at-point (thing-at-point 'symbol)))
 	 (stripped-symbol (and symbol-at-point
 			       (common-lisp-hyperspec--strip-cl-package
 				(downcase symbol-at-point)))))
     (cond ((and stripped-symbol
+		(not (or confirm ;; defalias hyperspec-lookup does not pass in current-prefix-arg
+			 current-prefix-arg))
 		(common-lisp-hyperspec--find stripped-symbol))
 	   stripped-symbol)
 	  (t
@@ -110,7 +112,7 @@ the entire Common Lisp HyperSpec to your own site under certain conditions.
 Visit http://www.lispworks.com/reference/HyperSpec/ for more information.
 If you copy the HyperSpec to another location, customize the variable
 `common-lisp-hyperspec-root' to point to that location."
-  (interactive (list (common-lisp-hyperspec-read-symbol-name)))
+  (interactive (list (common-lisp-hyperspec-read-symbol-name nil current-prefix-arg)))
   (let ((name (common-lisp-hyperspec--strip-cl-package
 	       (downcase symbol-name))))
     (cl-maplist (lambda (entry)
