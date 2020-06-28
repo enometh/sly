@@ -16,7 +16,7 @@
                      sly-trace-dialog
                      ;; sly-profiler ;; not ready for prime-time yet
                      sly-stickers
-                     sly-indentation
+;;                   sly-indentation
                      sly-tramp))
 
 (provide 'sly-fancy)
