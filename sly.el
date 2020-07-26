@@ -3725,7 +3725,8 @@ new window or frame."
               ((consp method)
                (let* ((window (car method))
                       (sub-method (cdr method)))
-                 (cond ((not (window-live-p window))
+                 (cond ((or (not (window-live-p window))
+			    (window-dedicated-p window))
                         ;; the original window has been deleted: all
                         ;; bets are off!
                         ;;
@@ -5707,7 +5708,8 @@ pending Emacs continuations."
           #'(lambda (w)
               (let ((value (window-parameter w 'sly-db)))
                 (and value
-                     (not (buffer-live-p value))))))))
+                     (not (buffer-live-p value))
+		     (not (window-dedicated-p w))))))))
     (when window
       (display-buffer-record-window 'reuse window buffer)
       (set-window-buffer window buffer)
