@@ -7,13 +7,16 @@
 
 ;; (lookup-key  sly-mode-map "\C-c\M-u" 'slime-undefmethod)
 
+;; FIXME: compile-defun on define-sly-contrib
 (define-sly-contrib sly-undefmethod
+  " Sly Undefmethod. Obligatory docstring."
   (:slynk-dependencies slynk/undefmethod))
 
 (defun sly-undefmethod ()
   "Remove the method which is defined at point."
   (interactive)
-  (let ((form (sly-defun-at-point)))
+  (let ((form (apply #'buffer-substring-no-properties
+                     (sly-region-for-defun-at-point))))
     (when (string-match "^(defmethod " form)
       (sly-interactive-eval
        (replace-regexp-in-string "^(defmethod "
@@ -22,7 +25,8 @@
 (defun sly-undefclass ()
   "Remove the class which is defined at point."
   (interactive)
-  (let ((form (sly-defun-at-point)))
+  (let ((form (apply #'buffer-substring-no-properties
+                     (sly-region-for-defun-at-point))))
     (when (string-match "^(defclass " form)
       (sly-interactive-eval
        (replace-regexp-in-string "^(defclass "
