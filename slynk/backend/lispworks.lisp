@@ -327,6 +327,11 @@ Return NIL if the symbol is unbound."
 (defmethod env-internals:environment-display-debugger ((env sly-env))
   *debug-io*)
 
+(defmethod env-internals:environment-display-editor ((env sly-env) function &rest args)
+  (if function
+      (apply function args)
+      (find-symbol "ED-IN-EMACS" "SLYNK")))
+
 (defmethod env-internals:confirm-p ((e sly-env) &optional msg &rest args)
   (apply (slynk-sym :y-or-n-p-in-emacs) msg args))
 
