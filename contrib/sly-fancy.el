@@ -10,6 +10,7 @@
                      sly-autodoc
 		     sly-undefmethod
 		     sly-c-p-c
+		     sly-mk-defsystem
                      sly-fancy-inspector
                      sly-fancy-trace
                      sly-scratch
