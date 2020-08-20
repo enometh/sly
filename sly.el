@@ -7670,6 +7670,14 @@ and replace `sly-editing-mode' with `slime-lisp-mode-hook'.")))
   (warn
    "`sly.el' loaded OK. To use SLY, customize `lisp-mode-hook' and remove `slime-lisp-mode-hook'.")))
 
+
+;; default is 100.
+(defun sly-set-string-elision-length (arg)
+  (interactive "nenter string-elision-length (0 for unlimited): ")
+  (sly-eval `(cl:setf (cl:cdr (cl:assoc 'slynk:*string-elision-length* slynk::*slynk-pprint-bindings*)) ,(if (zerop arg) nil arg))))
+
+
+
 (provide 'sly)
 
 ;;; sly.el ends here
