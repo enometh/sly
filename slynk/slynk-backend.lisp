@@ -22,6 +22,7 @@
            severity
            with-compilation-hooks
            make-location
+           network-error
            location
            location-p
            location-buffer
