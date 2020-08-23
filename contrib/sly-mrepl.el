@@ -773,8 +773,7 @@ recent entry that is discarded."
     (set-process-plist stream `(sly-mrepl--channel ,channel))
     (set-process-filter stream 'sly-mrepl--dedicated-stream-output-filter)
     (set-process-coding-system stream emacs-coding-system emacs-coding-system)
-    (sly--when-let (secret (sly-secret))
-      (sly-net-send secret stream))
+    (sly-send-secret stream)
     (run-hook-with-args 'sly-mrepl--dedicated-stream-hooks stream)
     stream))
 
