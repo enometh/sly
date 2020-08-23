@@ -1019,7 +1019,10 @@ first."
   (let ((secret (sly-secret)))
     (when secret
       (set-stream-timeout stream 20)
-      (let ((first-val (read-packet stream)))
+      (let ((first-val (if (subtypep (stream-element-type stream)
+				  '(unsigned-byte 8))
+			   (read-packet stream)
+			   (read-packet-character-stream stream))))
         (unless (and (stringp first-val) (string= first-val secret))
           (error "Incoming connection doesn't know the password.")))
       (set-stream-timeout stream nil))))
