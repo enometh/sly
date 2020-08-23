@@ -13,6 +13,7 @@
   (:export 
    #:read-message
    #:read-packet
+   #:read-packet-character-stream
    #:slynk-reader-error
    #:slynk-reader-error.packet
    #:slynk-reader-error.cause
@@ -37,10 +38,30 @@
         (error 'slynk-reader-error 
                :packet packet :cause c)))))
 
+(defun read-chunk-character-stream (stream length)
+  ;;(warn "READ-CHUNK-CHARACTER-STREAM stream = ~S" (list stream (stream-element-type stream)))
+  (let* ((buffer (make-array length :element-type 'base-char))
+         (count (read-sequence buffer stream)))
+    (cond ((= count length)
+           buffer)
+          ((zerop count)
+           (error 'end-of-file :stream stream))
+          (t
+           (error "Short read: length=~D  count=~D" length count)))))
+
+(defun parse-header-character-stream (stream)
+  (parse-integer (read-chunk-character-stream stream 6) :radix 16))
+
+;; reader-error
+(defun read-packet-character-stream (stream)
+  (let* ((length (parse-header-character-stream stream)))
+    (read-chunk-character-stream stream length)))
+
 (defun read-packet (stream)
   (let* ((length (parse-header stream))
          (octets (read-chunk stream length)))
     (handler-case (slynk-backend:utf8-to-string octets)
+      ;; ;madhu 200906 should catch reader-error here. and the handler-case is in the wrong part - it should be around read-chunk.
       (error (c) 
         (error 'slynk-reader-error 
                :packet (asciify octets)
@@ -59,6 +80,7 @@
                  :radix 16))
 
 (defun read-chunk (stream length)
+  ;;(warn "READ-CHUNK stream = ~S" (list stream (stream-element-type stream)))
   (let* ((buffer (make-array length :element-type '(unsigned-byte 8)))
          (count (read-sequence buffer stream)))
     (cond ((= count length)
