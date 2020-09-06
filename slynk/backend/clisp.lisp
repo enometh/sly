@@ -170,7 +170,11 @@
                                       &key external-format buffering timeout)
   (declare (ignore buffering timeout))
   (socket:socket-accept socket
-                        :buffered buffering ;; XXX may not work if t
+                        :buffered ;; buffering ;; XXX may not work if t
+                        (ecase buffering
+                          ((t :full) t)
+                          ((nil :none) nil)
+                          ((:line) :line))
                         :element-type (if external-format 
                                           'character
                                           '(unsigned-byte 8))
