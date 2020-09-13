@@ -6771,6 +6771,17 @@ was called originally."
          'part-label "Inspector Object"
          props))
 
+(defmacro define-sly-inspector-face (name description &optional default)
+  (let ((facename (intern (format "sly-inspector-%s-face" (symbol-name name)))))
+    `(defface ,facename
+       (list (list t ,default))
+       ,(format "Face for
+ %s." description)
+       :group 'inspector)))
+
+(define-sly-inspector-face label "label")
+;; Invalid face reference: sly-inspector-label-face [2 times]
+
 (defmacro sly-inspector-fontify (face string)
   `(sly-add-face ',(intern (format "sly-inspector-%s-face" face)) ,string))
 
