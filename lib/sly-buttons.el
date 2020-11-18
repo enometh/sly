@@ -59,7 +59,7 @@
      (defun ,action (button)
        ,(format "%s the object under BUTTON."
                 label)
-       (interactive (list (sly-button-at)))
+       (interactive (list (sly-button-at nil nil 'no-error)))
        (let ((fn (button-get button ',action))
              (args (button-get button 'part-args)))
          (if (and
@@ -79,13 +79,13 @@
          `((define-key sly-part-button-keymap ,key
              '(menu-item "" ,action
                          :filter (lambda (cmd)
-                                   (let ((button (sly-button-at)))
+                                   (let ((button (sly-button-at nil nil 'no-error)))
                                      (and button
                                           (button-get button ',action)
                                           cmd)))))))
      (define-key sly-button-popup-part-menu-keymap
        [,action] '(menu-item ,label ,action
-                             :visible (let ((button (sly-button-at)))
+                             :visible (let ((button (sly-button-at nil nil 'no-error)))
                                         (and button
                                              (button-get button ',action)))))))
 
@@ -149,7 +149,7 @@ Also see `insert-text-button'."
 
 (defun sly--make-text-button (beg end &rest properties)
   "Just like `make-text-button', but add sly-specifics."
-  (apply #'make-text-button-emacs-27 beg end
+  (apply #'make-text-button beg end
          'sly-connection (sly-current-connection)
          properties))
 
