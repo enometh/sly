@@ -12,12 +12,15 @@
             "Matthias Koeppe  <mkoeppe@mail.math.uni-magdeburg.de>"
             "Tobias C. Rittweiler  <tcr@freebits.de>")
   (:slynk-dependencies slynk/arglists)
-  (:on-load (add-hook 'sly-editing-mode-hook 'sly-autodoc-mode)
-            (add-hook 'sly-mrepl-mode-hook 'sly-autodoc-mode)
-            (add-hook 'sly-minibuffer-setup-hook 'sly-autodoc-mode))
-  (:on-unload (remove-hook 'sly-editing-mode-hook 'sly-autodoc-mode)
-              (remove-hook 'sly-mrepl-mode-hook 'sly-autodoc-mode)
-              (remove-hook 'sly-minibuffer-setup-hook 'sly-autodoc-mode)))
+  (:on-load (add-hook 'sly-editing-mode-hook 'sly-autodoc-mode-on)
+            (add-hook 'sly-mrepl-mode-hook 'sly-autodoc-mode-on)
+            (add-hook 'sly-minibuffer-setup-hook 'sly-autodoc-mode-on))
+  (:on-unload (remove-hook 'sly-editing-mode-hook 'sly-autodoc-mode-off)
+              (remove-hook 'sly-mrepl-mode-hook 'sly-autodoc-mode-off)
+              (remove-hook 'sly-minibuffer-setup-hook 'sly-autodoc-mode-off)))
+
+(defun sly-autodoc-mode-on () (sly-autodoc-mode 1))
+(defun sly-autodoc-mode-off () (sly-autdoc-mode -1))
 
 (defcustom sly-autodoc-accuracy-depth 10
   "Number of paren levels that autodoc takes into account for
@@ -41,10 +44,17 @@
 		(symbol (symbol-name name)))))
     (car (sly-eval `(slynk:autodoc '(,name ,sly-cursor-marker))))))
 
+(defvar sly-autodoc-no-norly t
+  "If non-NIL, sly-autodoc will check if the contrib is enabled in
+slime-contribs, and if it isn't it will disable sly-autodoc-mode in the local
+buffer so it won't run again.")
+
+
 (defun sly-autodoc-manually ()
   "Like autodoc information forcing multiline display."
   (interactive)
-  (let ((doc (sly-autodoc t)))
+  (let* ((sly-autodoc-no-norly nil)	; force it regardless of mode
+	 (doc (sly-autodoc t)))
     (cond (doc (eldoc-message (format "%s" doc)))
 	  (t (eldoc-message nil)))))
 
@@ -114,6 +124,10 @@
   "Returns the cached arglist information as string, or nil.
 If it's not in the cache, the cache will be updated asynchronously."
   (interactive "P")
+  (if (and sly-autodoc-mode (not (find 'sly-autodoc sly-contribs))
+	   sly-autodoc-no-norly)
+      (progn (message "turned off sly-autodoc mode in %s" (current-buffer))
+	     (sly-autodoc-mode -1)))
   (save-excursion
     (save-match-data
       ;; See github#385 and
@@ -133,6 +147,11 @@ If it's not in the cache, the cache will be updated asynchronously."
 		   (when (sly-background-activities-enabled-p)
 		     (sly-autodoc--async context multilinep))
 		   nil))))))))
+
+(defun sly-autodoc-callback (callback)
+  (let ((doc (sly-autodoc)))
+    (when doc
+      (funcall callback doc))))
 
 ;; Return the context around point that can be passed to
 ;; slynk:autodoc.  nil is returned if nothing reasonable could be
@@ -172,12 +191,10 @@ If it's not in the cache, the cache will be updated asynchronously."
   "Toggle echo area display of Lisp objects at point."
   nil nil nil
   (cond (sly-autodoc-mode
-         (set (make-local-variable 'eldoc-documentation-function) 'sly-autodoc)
-         (set (make-local-variable 'eldoc-minor-mode-string) "")
-         (eldoc-mode sly-autodoc-mode))
-        (t
-         (eldoc-mode -1)
-         (set (make-local-variable 'eldoc-documentation-function) nil)
-         (set (make-local-variable 'eldoc-minor-mode-string) " ElDoc"))))
+	 (add-hook 'eldoc-documentation-functions 'sly-autodoc-callback nil t)
+	 (eldoc-mode 1))
+	(t
+	 (remove-hook 'eldoc-documentation-functions 'sly-autodoc-callback t)
+	 (eldoc-mode -1))))
 
 (provide 'sly-autodoc)
