@@ -730,10 +730,12 @@ before reading input.  The result is a string (\"\" if no input
 was given and ALLOW-EMPTY is non-nil)."
   (sly--with-sly-minibuffer
    (cl-loop
-    with minibuffer-setup-hook = (cons
-                                  (lambda ()
-                                    (run-hooks 'sly-minibuffer-setup-hook))
-                                  minibuffer-setup-hook)
+    with minibuffer-setup-hook = (append
+				  minibuffer-setup-hook
+				  (list
+                                   (lambda ()
+                                     (run-hooks 'sly-minibuffer-setup-hook))
+                                   ))
     for i from 0
     for read = (read-from-minibuffer
                 (concat "[sly] " (when (cl-plusp i)
