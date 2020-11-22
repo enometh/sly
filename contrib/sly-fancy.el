@@ -11,6 +11,7 @@
 		     sly-undefmethod
 		     sly-c-p-c
 		     sly-mk-defsystem
+		     sly-background-output
                      sly-fancy-inspector
                      sly-fancy-trace
                      sly-scratch
