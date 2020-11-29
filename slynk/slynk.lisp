@@ -2953,7 +2953,7 @@ Record compiler notes signalled as `compiler-condition's."
 
 ;;;;; slynk-require
 
-(defvar *module-loading-method* (find-if #'find-package '(:slynk-loader :asdf))
+(defvar *module-loading-method* (find-if #'find-package '(:make :slynk-loader :asdf))
   "Keyword naming the module-loading method.
 
 SLY's own `slynk-loader.lisp' is tried first, then ASDF")
@@ -2970,6 +2970,8 @@ Receives a module name as argument and should return non-nil if it
 managed to load it.")
   (:method ((method (eql :slynk-loader)) module)
     (funcall (intern "REQUIRE-MODULE" :slynk-loader) module))
+  (:method ((method (eql :make)) module)
+   (funcall (intern "LOAD-SYSTEM" :make) module))
   (:method ((method (eql :asdf)) module)
     (unless *asdf-load-in-progress*
       (let ((*asdf-load-in-progress* t))
@@ -2984,7 +2986,10 @@ managed to load it.")
   (:method ((method (eql :slynk-loader)) path)
     (add-to-load-path-1 path (intern "*LOAD-PATH*" :slynk-loader)))
   (:method ((method (eql :asdf)) path)
-    (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :asdf))))
+   (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :asdf)))
+  ;; bogus
+  (:method ((method (eql :make)) path)
+   (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :make))))
 
 (defvar *slynk-require-hook* '()
   "Functions run after SLYNK-REQUIRE. Called with new modules.")
