@@ -293,7 +293,9 @@ be a port number ready in SLYNK-PORTFILE."
   :type '(choice (const :tag "Use ASDF"
                         sly-init-using-asdf)
                  (const :tag "Use legacy slynk-loader.lisp"
-                        sly-init-using-slynk-loader))
+                        sly-init-using-slynk-loader)
+		 (const :tag "Use mk-defsystem slynk.system"
+                        sly-init-using-mk-defsystem))
   :group 'sly-lisp)
 
 (define-obsolete-variable-alias 'sly-backend
@@ -1411,6 +1413,18 @@ Fall back to `sly-init-using-slynk-loader' if ASDF fails."
   "Return a string to initialize Lisp."
   (let ((loader (sly-to-lisp-filename
                  (expand-file-name sly-slynk-loader-backend (sly-slynk-path)))))
+    ;; Return a single form to avoid problems with buffered input.
+    (format "%S\n\n"
+            `(progn
+               (load ,loader :verbose t)
+               (funcall (read-from-string "slynk-loader:init"))
+               (funcall (read-from-string "slynk:start-server")
+                        ,port-filename)))))
+
+(defun sly-init-using-mk-defsystem (port-filename _coding-system)
+  "Return a string to initialize Lisp."
+  (let ((loader (sly-to-lisp-filename
+                 (expand-file-name "slynk.system" (sly-slynk-path)))))
     ;; Return a single form to avoid problems with buffered input.
     (format "%S\n\n"
             `(progn
