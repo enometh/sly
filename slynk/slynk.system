@@ -1,0 +1,149 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Sun Mar 10 23:39:16 2019 +0530 <enometh@net.meer>
+;;;   Bugs-To: enometh@net.meer
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2019 Madhu.  All Rights Reserved.
+;;;
+;;; files as of 2.23. We don't use swank-loader so we define the
+;;; swank-loader symbols used in the sources.
+;;;
+;;;
+(in-package "CL-USER")
+
+(defvar *sly-source-dir*
+  "~/elisp/pkg/sly/"
+  #+nil
+  (merge-pathnames "slynk/" (translate-logical-pathname "EXTERN:")))
+(defvar *sly-binary-dir* (binary-directory "sly/"
+					   #+nil *sly-source-dir*))
+
+(unless (find-package :slynk-loader)
+  (make-package :slynk-loader))
+;; XXX package swank-loader may be referenced within slynk/* source
+(defvar slynk-loader::*source-directory* *sly-source-dir*)
+(defvar slynk-loader::*fasl-directory* *sly-binary-dir*)
+(defvar slynk-loader::*load-path* (list *sly-source-dir*))
+
+(export 'slynk-loader::init :slynk-loader)
+
+(defun slynk-loader::init (&key delete reload (setup t)
+			    (quiet (not *load-verbose*))
+			    load-contribs)
+  (warn "Faking slynk-loader::init")
+  (when (and delete (find-package :slynk))
+    (mapc #'delete-package
+	  (remove-if-not
+	   (lambda (package)
+	     (let ((name (package-name package)))
+	       (and (string-not-equal name "slynk-loader")
+		    (string-equal name "slynk"
+				  :end1 (min (length name) (length "slynk"))))))
+	   (list-all-packages)))
+    (mapc #'delete-package
+	  (remove-if-not (lambda (p) (find-package p))
+			 '(:slynk :slynk-io-package :slynk-backend))))
+  (cond ((or (not (find-package :slynk)) reload)
+         (mk:load-system :slynk :verbose (not quiet)))
+        (t
+         (warn "Not reloading SLYNK.  Package already exists.")))
+  (when setup
+    (funcall (read-from-string "slynk::init"))))
+
+
+(defvar *sly-sysdep-files*
+  #+cmu '(slynk-source-path-parser slynk-source-file-cache (backend cmucl))
+  #+scl '(slynk-source-path-parser slynk-source-file-cache (backend scl))
+  #+sbcl '(slynk-source-path-parser slynk-source-file-cache
+           (backend sbcl))
+  #+clozure '(metering (backend ccl))
+  #+lispworks '((backend lispworks))
+  #+allegro '((backend allegro))
+  #+clisp '(xref metering (backend clisp))
+  #+armedbear '((backend abcl))
+  #+cormanlisp '((backend corman))
+  #+ecl '(slynk-source-path-parser slynk-source-file-cache
+          (backend ecl))
+  #+clasp '((backend clasp))
+  #+mkcl '(slynk-source-path-parser slynk-source-file-cache
+          (backend mkcl)))
+
+(defvar *sly-slynk-files*
+  `(slynk-backend ,@*sly-sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
+                  slynk slynk-completion slynk-apropos))
+
+(defvar *sly-contribs*
+  '((slynk slynk-util)
+    (contrib slynk-arglists)
+    (contrib slynk-fancy-inspector)
+    (contrib slynk-package-fu)
+    (contrib slynk-mrepl)
+    (contrib slynk-mk-defsystem)
+    (contrib slynk-autodoc)
+    (contrib slynk-background-output)
+    (contrib slynk-trace-dialog)
+    (contrib slynk-profiler)
+    (contrib slynk-stickers)
+    (contrib slynk-indentation)
+    (contrib slynk-retro)
+    (contrib slynk-c-p-c)
+    (contrib slynk-undefmethod))
+  "List of names for contrib modules.")
+
+(defmacro def-sly-defsystem ()
+  `(mk:defsystem :slynk
+     :source-pathname *sly-source-dir*
+     :binary-pathname *sly-binary-dir*
+     :source-extension "lisp"
+     :finally-do (progn
+		   (format *debug-io* "~&SLYNK's DEFSYSTEM loader finished.")
+		   (funcall (read-from-string "slynk::init")))
+     :components ((:module "slynk"
+		  :components
+		  ,(mapcar (lambda (x)
+			     (etypecase x
+			       (symbol (string-downcase x))
+			       (cons (format nil "~(~{~A~^/~}~)" x))))
+			   *sly-slynk-files*)))))
+
+(defun slynk-loader::require-module (module)
+  (warn "Faking slynk-loader::require-module ~S" module)
+  (mk:load-system module :compile-during-load t))
+
+(defun slash-chop-slynk-name (name &key (prefix "SLYNK-"))
+  (let ((len (length name))
+	(prefix-len (length prefix)))
+    (when (and (< prefix-len len)
+	       (string-equal prefix name :end1 prefix-len :end2 prefix-len))
+      (let ((suffix (string-upcase (subseq name prefix-len))))
+	(values (concatenate 'string "SLYNK/" suffix)
+		suffix)))))
+
+#+nil
+(slash-chop-slynk-name "slynk-utils")
+
+(defmacro def-sly-contribs-defsystems ()
+  `(progn
+     ,@(mapcar (lambda (x)
+		(destructuring-bind (dir name) x
+		  (declare (ignore dir))
+		  (multiple-value-bind (module-name suffix)
+		      (slash-chop-slynk-name (string name))
+		    (declare (ignore suffix))
+		    `(mk::defsystem ,module-name
+		       :source-pathname *sly-source-dir*
+		       :binary-pathname *sly-binary-dir*
+		       :source-extension "lisp"
+		       :components (,(list :file (format nil "~(~{~A~^/~}~)" x)))))))
+	      *sly-contribs*
+	      )))
+
+(def-sly-defsystem)
+(def-sly-contribs-defsystems)
+
+#+nil
+(mk:oos :slynk :load :compile-during-load t)
+
+#+nil
+(mk:oos :slynk-contribs :load :compile-during-load t)
