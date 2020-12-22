@@ -491,6 +491,9 @@ PROPERTIES specifies any default face properties."
                            (define-key map "i" 'sly-inferior-lisp-buffer)
                            (define-key map "l" 'sly-switch-to-most-recent)
 			   (define-key map "o"  'sly-switch-to-background-output)
+			   (define-key map "D" 'sly-switch-to-description)
+			   (define-key map "I" 'sly-switch-to-inspector)
+			   (define-key map "M" 'sly-switch-to-macroexpansion)
                            map)
   "A keymap for frequently used SLY shortcuts.
 Access to this keymap can be installed in in
@@ -6659,6 +6662,24 @@ was called originally."
                           :mode 'sly-connection-list-mode)
     (sly-update-connection-list)))
 
+(defun sly-switch-to-description ()
+  "switch to sly-description."
+  (interactive)
+  (pop-to-buffer (sly-buffer-name :description)))
+
+(defun sly-switch-to-inspector (&optional inspector-name)
+  "switch to sly-inspector."
+  (interactive)
+  (pop-to-buffer
+   (sly-buffer-name :inspector
+		    :connection t
+		    :suffix inspector-name)))
+
+(defun sly-switch-to-macroexpansion ()
+  "switch to sly-macroexpansion."
+  (interactive)
+  (pop-to-buffer
+   (sly-buffer-name :macroexpansion)))
 
 (defun sly-switch-to-background-output ()
   "switch to sly-background-output."
