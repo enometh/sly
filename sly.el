@@ -981,14 +981,24 @@ macroexpansion time.
            (unless (eq ,select-sym :hidden)
              (let ((window (display-buffer
                             (current-buffer)
-                            (if ,(cond (same-window-p same-window-p)
-                                       (mode `(eq ,major-mode-sym ,mode)))
-                                nil
-                              t))))
+			    `(nil
+			      .
+			      ((inhibit-same-window
+				.
+				,(if ,(cond (same-window-p same-window-p)
+					   (mode `(eq ,major-mode-sym ,mode)))
+                                    nil
+				  t))
+			       (inhibit-switch-frame
+				.
+				,(not ,select-sym)))))))
                (when ,select-sym
                  (if window
-                     (select-window window t))))
-             (if (eq ,select-sym :raise) (raise-frame)))
+                     (progn
+		       (select-window window t)
+		       (select-frame-set-input-focus (window-frame window)))
+		   )))
+             (if (eq ,select-sym :raise) (raise-frame (window-frame window))))
            (current-buffer))))))
 
 ;;;;; Filename translation
