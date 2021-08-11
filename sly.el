@@ -1446,7 +1446,12 @@ Fall back to `sly-init-using-slynk-loader' if ASDF fails."
     (format "%S\n\n"
             `(progn
                (load ,loader :verbose t)
-               (funcall (read-from-string "slynk-loader:init"))
+	       ;; we load slynk-loader.lisp anyway because we want to
+	       ;; support slynk::*module-loading-method* ==
+	       ;; :slynk-loader by default.
+	       (load (merge-pathnames "slynk-loader.lisp" ,loader))
+               (funcall (read-from-string "mk:load-system") :slynk
+			:compile-during-load t)
                (funcall (read-from-string "slynk:start-server")
                         ,port-filename)))))
 
