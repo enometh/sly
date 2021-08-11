@@ -19,16 +19,29 @@
 (defvar *sly-binary-dir* (binary-directory "sly/"
 					   #+nil *sly-source-dir*))
 
+(defpackage "SLYNK-MK-DEFSYSTEM-LOADER"
+  (:use "CL")
+  (:import-from "CL-USER" "*SLY-SOURCE-DIR*" "*SLY-BINARY-DIR*")
+  (:export
+   "INIT"
+   "REQUIRE-MODULE"))
+(in-package "SLYNK-MK-DEFSYSTEM-LOADER")
+
+#+nil
 (unless (find-package :slynk-loader)
   (make-package :slynk-loader))
+
+#+nil
+(progn
 ;; XXX package swank-loader may be referenced within slynk/* source
 (defvar slynk-loader::*source-directory* (merge-pathnames "slynk/" *sly-source-dir*))
 (defvar slynk-loader::*fasl-directory* *sly-binary-dir*)
 (defvar slynk-loader::*load-path* (list (merge-pathnames "slynk/" *sly-source-dir*) (merge-pathnames "contrib/" *sly-source-dir*))))
 
+#+nil
 (export 'slynk-loader::init :slynk-loader)
 
-(defun slynk-loader::init (&key delete reload (setup t)
+(defun init (&key delete reload (setup t)
 			    (quiet (not *load-verbose*))
 			    load-contribs)
   (warn "Faking slynk-loader::init")
@@ -107,7 +120,7 @@
 			       (cons (format nil "~(~{~A~^/~}~)" x))))
 			   *sly-slynk-files*)))))
 
-(defun slynk-loader::require-module (module)
+(defun require-module (module)
   (warn "Faking slynk-loader::require-module ~S" module)
   (mk:load-system module :compile-during-load t))
 
