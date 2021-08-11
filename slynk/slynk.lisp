@@ -2958,10 +2958,13 @@ Record compiler notes signalled as `compiler-condition's."
 
 ;;;;; slynk-require
 
-(defvar *module-loading-method* (find-if #'find-package '(:make :slynk-loader :asdf))
+(defvar *module-loading-methods* '(:make :slynk-loader :asdf))
+
+(defvar *module-loading-method* :serial ; (find-if #'find-package *module-loading-methods*)
   "Keyword naming the module-loading method.
 
-SLY's own `slynk-loader.lisp' is tried first, then ASDF")
+If :SERIAL try the methods *MODULE-LOADING-METHODS* by turn.
+")
 
 (defvar *asdf-load-in-progress* nil
   "Set to t if inside a \"ASDF:LOAD-SYSTEM\" operation.
@@ -2977,6 +2980,14 @@ managed to load it.")
     (funcall (intern "REQUIRE-MODULE" :slynk-loader) module))
   (:method ((method (eql :make)) module)
    (funcall (intern "LOAD-SYSTEM" :make) module))
+  (:method ((method (eql :serial)) module)
+   (loop for (meth . rest) on *module-loading-methods* do
+	 (when (and (not (eq meth :serial)) (find-package meth))
+	   (if (endp rest)		; no point offering a restart
+	       (return (require-module meth module))
+	       (with-simple-restart
+		   (try-next "try next module loading method")
+		 (return (require-module meth module)))))))
   (:method ((method (eql :asdf)) module)
     (unless *asdf-load-in-progress*
       (let ((*asdf-load-in-progress* t))
@@ -2991,8 +3002,22 @@ managed to load it.")
   (:method ((method (eql :slynk-loader)) path)
     (add-to-load-path-1 path (intern "*LOAD-PATH*" :slynk-loader)))
   (:method ((method (eql :asdf)) path)
-   (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :asdf)))
-  ;; bogus
+   (cond ((and (find-package "ASDF") (boundp (intern "*CENTRAL-REGISTRY*" :asdf)))
+	  (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :asdf)))
+	 (t (warn "FIXME :SERIAL TRYING TO USE ASDF!!!!"))))
+
+  ;; fixme :serial.  (require-module :serial) should bind
+  ;; *module-loading-methods* and should load the needed paths and not
+  ;; sly-contrib--load-slynk-dependencies. as a copout load paths for
+  ;; all methods.
+  (:method ((method (eql :serial)) path)
+   (loop for (meth . rest) on *module-loading-methods* do
+	 (when (and (not (eq meth :serial)) (find-package meth))
+	   (if (endp rest)		; no point offering a restart
+	       (IDENTITY (add-to-load-path meth path))
+	       (with-simple-restart
+		   (try-next "try next module loading method")
+		 (IDENTITY (add-to-load-path meth path)))))))
   (:method ((method (eql :make)) path)
    (add-to-load-path-1 path (intern "*CENTRAL-REGISTRY*" :make))))
 
