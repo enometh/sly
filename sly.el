@@ -4023,7 +4023,7 @@ For insertion in the `compilation-mode' buffer"
 (defun sly-pop-find-definition-stack ()
   "Pop the edit-definition stack and goto the location."
   (interactive)
-  (pop-tag-mark))
+  (xref-go-back))
 
 (cl-defstruct (sly-xref (:conc-name sly-xref.) (:type list))
   dspec location)
