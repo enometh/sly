@@ -55,7 +55,10 @@ buffer so it won't run again.")
   (interactive)
   (let* ((sly-autodoc-no-norly nil)	; force it regardless of mode
 	 (doc (sly-autodoc t)))
-    (cond (doc (eldoc-message (format "%s" doc)))
+    (cond (doc
+	   (if (fboundp 'sly-autodoc-temp-buffer-message)
+	       (sly-autodoc-temp-buffer-message (format "%s" doc))
+	     (eldoc-message (format "%s" doc))))
 	  (t (eldoc-message nil)))))
 
 ;; Must call eldoc-add-command otherwise (eldoc-display-message-p)
