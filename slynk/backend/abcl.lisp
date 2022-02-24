@@ -8,6 +8,12 @@
 ;;; This code has been placed in the Public Domain.  All warranties
 ;;; are disclaimed.
 ;;;
+(in-package "CL-USER")
+
+;; ;madhu 220223 - sly doesn't have a packages.lisp and this file is
+;; loaded before slynk.lisp. we have to rearrange the loading order in
+;; slynk-loader and slynk.system so backend/abcl is loaded AFTER
+;; slynk. also the satanic asdf style packagenames which use slash.
 
 (defpackage slynk/abcl
   (:use cl slynk/backend)
@@ -1534,3 +1540,7 @@
                  (system::%set-lambda-name compiled (second (sys::lambda-name impl)))
                  (setf (get s 'slynk-backend::implementation) compiled))))))
 
+
+;madhu 220224 - since we are loaded after slynk
+(eval-when (load eval compile)
+  (setq slynk::*communication-style* (preferred-communication-style)))

@@ -73,7 +73,7 @@
   #+lispworks '((backend lispworks))
   #+allegro '((backend allegro))
   #+clisp '(xref metering (backend clisp))
-  #+armedbear '((backend abcl))
+  #+armedbear nil ;; '((backend abcl))
   #+cormanlisp '((backend corman))
   #+ecl '(slynk-source-path-parser slynk-source-file-cache
           (backend ecl))
@@ -83,7 +83,9 @@
 
 (defvar *sly-slynk-files*
   `(slynk-backend ,@*sly-sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
-                  slynk slynk-completion slynk-apropos))
+                  slynk
+		  #+armedbear (backend abcl)
+		  slynk-completion slynk-apropos))
 
 (defvar *sly-contribs*
   '((slynk slynk-util)
