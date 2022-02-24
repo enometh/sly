@@ -9,9 +9,12 @@
 ;;; This file defines the functions that must be implemented
 ;;; separately for each Lisp. Each is declared as a generic function
 ;;; for which slynk-<implementation>.lisp provides methods.
+(in-package "CL-USER")
 
 (defpackage slynk-backend
   (:use cl)
+  #+armedbear ; uses slynk/backend not slynk-backend
+  (:nicknames "SLYNK/BACKEND")
   (:export *debug-slynk-backend*
            sly-db-condition
            compiler-condition
@@ -64,6 +67,11 @@
            *auto-flush-interval*
 
            find-symbol2
+
+   #+armedbear
+   gray-package-name
+   preferred-communication-style
+
            ))
 
 (defpackage slynk-mop

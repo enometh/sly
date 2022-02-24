@@ -17,6 +17,8 @@
 ;;   (setq slynk-loader::*fasl-directory* "/tmp/fasl/")
 ;;   (slynk-loader:init)
 
+(in-package "CL-USER")
+
 (cl:defpackage :slynk-loader
   (:use :cl)
   (:export #:init
@@ -26,6 +28,13 @@
            #:*load-path*))
 
 (cl:in-package :slynk-loader)
+
+;; work around abcl defpackage
+#+armedbear
+(cl:progn
+(cl:use-package "CL" "SLYNK-LOADER")
+(cl:export '(init dump-image list-fasls *source-directory*
+             *fasl-directory* *load-path*)))
 
 (defvar *source-directory*
   (make-pathname :name nil :type nil
@@ -44,7 +53,7 @@
   #+lispworks '((backend lispworks))
   #+allegro '((backend allegro))
   #+clisp '(xref metering (backend clisp))
-  #+armedbear '((backend abcl))
+  #+armedbear nil ;; '((backend abcl))
   #+cormanlisp '((backend corman))
   #+ecl '(slynk-source-path-parser slynk-source-file-cache
           (backend ecl))
@@ -236,7 +245,9 @@ If LOAD is true, load the fasl file."
 
 (defvar *slynk-files*
   `(slynk-backend ,@*sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
-                  slynk slynk-completion slynk-apropos))
+                  slynk
+                  #+armedbear (backend abcl)
+                  slynk-completion slynk-apropos))
 
 (defun load-slynk (&key (src-dir *source-directory*)
                      (fasl-dir *fasl-directory*)
