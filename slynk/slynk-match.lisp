@@ -85,6 +85,8 @@
 ;;
 
 (defpackage :slynk-match
+  #+armedbear
+  (:nicknames "SLYNK/MATCH")
   (:use :cl)
   (:export #:match))
 
