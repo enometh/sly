@@ -391,6 +391,8 @@
 (defimplementation macroexpand-all (form &optional env)
   (ext:macroexpand-all form env))
 
+;; ;madhu 220224 not ported from slime?
+#+nil
 (defimplementation collect-macro-forms (form &optional env)
   ;; Currently detects only normal macros, not compiler macros.
   (declare (ignore env))
@@ -506,11 +508,11 @@
     (backtrace start end)))
 
 ;; Don't count on JSS being loaded, but if it is then there's some more stuff we can do
-+#+#.(slynk-backend:with-symbol 'invoke-restargs 'jss)
+#+#.(slynk/backend:with-symbol 'invoke-restargs 'jss)
 (defun jss-p ()
   (and (member "JSS" *modules* :test 'string=) (intern "INVOKE-RESTARGS" "JSS")))
 
-+#+#.(slynk-backend:with-symbol 'invoke-restargs 'jss)
+#+#.(slynk/backend:with-symbol 'invoke-restargs 'jss)
 (defun matches-jss-call (form)
   (flet ((gensymp (s) (and (symbolp s) (null (symbol-package s))))
          (invokep (s)  (and (symbolp s) (eq s (jss-p)))))
@@ -1035,7 +1037,7 @@
       (when (atom what)
         (setq what (list what sym)))
       (list (definition-specifier what)
-            (if (ext:pathname-jar-p path2)
+            (if (ext:pathname-jar-p (pathname path2))
                 `(:location
                   (:zip ,@(split-string (subseq path2 (length "jar:file:")) "!/"))
                   ;; pos never seems right. Use function name.
@@ -1211,27 +1213,42 @@ LIST is destructively modified."
 
 (defun inspector-java-object-fields (object)
   (loop
-     for super = (java::jobject-class object) then (jclass-superclass super)
-     while super
+    for super = (java::jobject-class object) then (jclass-superclass super)
+    while super
         ;;; NOTE: In the next line, if I write #'(lambda.... then I
         ;;; get an error compiling "Attempt to throw to the
         ;;; nonexistent tag DUPLICATABLE-CODE-P.". WTF
-     for fields
-       = (sort (jcall "getDeclaredFields" super) 'string-lessp :key (lambda(x) (jcall "getName" x)))
-     for fromline
-       = nil then (list `(:label "From: ") `(:value ,super  ,(jcall "getName" super)) '(:newline))
-     when (and (plusp (length fields)) fromline)
-     append fromline
-     append
-       (loop for this across fields
-          for value = (jcall "get" (progn (jcall "setAccessible" this t) this) object)
-          for line = `("  " (:label ,(jcall "getName" this)) ": " (:value ,value) (:newline))
+    for fields
+      = (sort (jcall "getDeclaredFields" super) 'string-lessp :key (lambda(x) (jcall "getName" x)))
+    for fromline
+      = nil then (list `(:label "From: ") `(:value ,super  ,(jcall "getName" super)) '(:newline))
+    when (and (plusp (length fields)) fromline)
+      append fromline
+    append
+    (loop for this across fields
+          ;;; openjdk17 workaround for setAccessible(): return an
+          ;;; "unavailable" label for field values which are not
+          ;;; accessible for some reason.
+          ;;;
+          ;;; TODO: make underlying reason for reflection failure
+          ;;; available somehow
+          for value-and-result = (let ((result
+                                         (ignore-errors
+                                          (jcall "get" (progn
+                                                         (ignore-errors (jcall "setAccessible" this t)) this)
+                                                 object))))
+                                   (if result
+                                       `(:value ,result)
+                                       '(:label "unavailable")))
+          for line = `("  " (:label ,(jcall "getName" this)) ": " ,value-and-result (:newline))
           if (static-field? this)
-          append line into statics
+            append line into statics
           else append line into members
           finally (return (append
-                           (if members `((:label "Member fields: ") (:newline) ,@members))
-                           (if statics `((:label "Static fields: ") (:newline) ,@statics)))))))
+                           (when members
+                             `((:label "Member fields: ") (:newline) ,@members))
+                           (when statics
+                             `((:label "Static fields: ") (:newline) ,@statics)))))))
 
 (defun emacs-inspect-java-object (object)
   (let ((to-string (lambda ()
@@ -1366,8 +1383,9 @@ LIST is destructively modified."
                   `("  " (:label ,(string-downcase (string name))) ": " (:value ,value) (:newline))))
         `("No slots available for inspection."))))
 
+#+#.(slynk/backend:with-symbol 'get-java-field 'jss)
 (defmethod emacs-inspect ((object sys::structure-class))
-  (let* ((name (class-name object))
+  (let* ((name (funcall (intern "GET-JAVA-FIELD OBJECT" :jss) "name" t))
          (def (get name  'system::structure-definition)))
     `((:label "Class: ") (:value ,object) (:newline)
       (:label "Raw defstruct definition: ") (:value ,def  ,(let ((*print-array* nil)) (prin1-to-string def))) (:newline)
@@ -1392,8 +1410,8 @@ LIST is destructively modified."
                   collect '(:newline)))))))
 
 (defun parts-for-structure-def-slot (def)
-  `((:label ,(string-downcase (sys::dsd-name def))) 
-    " reader: " (:value ,(sys::dsd-reader def) 
+  `((:label ,(string-downcase (sys::dsd-name def)))
+    " reader: " (:value ,(sys::dsd-reader def)
                         ,(string-downcase (string (sys::dsd-reader def))))
     ", index: " (:value ,(sys::dsd-index def))
     ,@(if (sys::dsd-initform def)
