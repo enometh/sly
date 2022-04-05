@@ -468,6 +468,7 @@
   (loop for f in (subseq *backtrace* start end)
         collect f))
 
+#+nil
 (defimplementation format-sldb-condition (condition)
   "Format a condition for display in SLDB."
   ;;(princ-to-string condition)
@@ -953,7 +954,7 @@ SI:COMPILED-FUNCTION-FILE locations the tree under
 
 ;;
 
-;;#+windows
+#+(and nil windows)
 (defimplementation doze-in-repl ()
   (setq *inferior-lisp-sleeping-post* (mt:make-semaphore))
   ;;(loop (sleep 1))
