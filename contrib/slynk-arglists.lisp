@@ -1601,6 +1601,7 @@ datum for subsequent logics to rely on."
                        'c)))))
 
 (test-print-arglist)
+#-mkcl
 (test-arglist-ref)
 
 (provide :slynk/arglists)
