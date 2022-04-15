@@ -569,9 +569,13 @@
   #+linux '("handle SIGPWR  noprint nostop"
             "handle SIGXCPU noprint nostop"))
 
+#+nil
 (defimplementation command-line-args ()
   (loop for n from 0 below (si:argc) collect (si:argv n)))
 |#
+
+#+nil
+(ignore-errors (si::argv 0))
 
 ;;;; Inspector
 
