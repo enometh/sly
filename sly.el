@@ -7239,6 +7239,29 @@ if/when you fix the error" (cl-third n))))
   (sly--contrib-safe name
     (funcall (sly-contrib--disable (sly-contrib--find-contrib name)))))
 
+;;; XXX
+(defun turn-on-sly-contrib (contrib-name)
+  (interactive "SContrib-name: ")
+  ;;  (interactive (list (sly-contrib--read-contrib-name))) only knows
+  ;;  about loaded contribs
+  (cl-check-type contrib-name symbol)
+  (unless (featurep contrib-name)
+    (require contrib-name))
+  (cl-pushnew contrib-name sly-contribs)
+  (sly-setup)
+  (with-demoted-errors "Error: %S" (sly-contrib--load-slynk-dependencies))
+  (sly-enable-contrib contrib-name))
+
+(defun turn-off-sly-contrib (contrib-name)
+  (interactive (list (sly-contrib--read-contrib-name)))
+  (cl-check-type contrib-name symbol)
+  (unless (featurep contrib-name)
+    (require contrib-name))
+  (setq sly-contribs (delete contrib-name sly-contribs))
+  (sly-setup)
+  (sly-disable-contrib contrib-name))
+
+
 
 ;;;;; Pull-down menu
 (easy-menu-define sly-menu sly-mode-map "SLY"
