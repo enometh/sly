@@ -4079,7 +4079,8 @@ in Emacs."
 
 (defun macro-indentation (arglist)
   (if (well-formed-list-p arglist)
-      (position '&body (remove '&optional (clean-arglist arglist)))
+      (or (position '&body (remove '&optional (clean-arglist arglist)))
+	  (position '&rest (remove '&optional (clean-arglist arglist))))
       nil))
 
 (defun clean-arglist (arglist)
