@@ -1,0 +1,24 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Fri Aug 19 17:37:14 2022 +0530 <enometh@net.meer>
+;;;   Bugs-To: enometh@net.meer
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2022 Madhu.  All Rights Reserved.
+;;;
+(in-package "CL-USER")
+
+(defvar *swank-compat-source-dir*
+  (merge-pathnames "swank-compat/" (translate-logical-pathname "EXTERN:")))
+(defvar *swank-compat-binary-dir* (binary-directory *swank-compat-source-dir*))
+
+(mk:defsystem :swank-compat
+   :source-pathname *swank-compat-source-dir*
+   :binary-pathname *swank-compat-binary-dir*
+   :source-extension "lisp"
+   :components (
+		"swank-compat"
+               ))
+
+#+nil
+(mk:oos :swank-compat :load :compile-during-load t)
