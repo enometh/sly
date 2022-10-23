@@ -464,6 +464,7 @@ PROPERTIES specifies any default face properties."
     (define-key map (kbd "C-a") 'sly-apropos)
     (define-key map (kbd "C-z") 'sly-apropos-all)
     (define-key map (kbd "C-p") 'sly-apropos-package)
+    (define-key map (kbd "C-x") 'sly-documentation)
     (define-key map (kbd "C-d") 'sly-describe-symbol)
     (define-key map (kbd "C-f") 'sly-describe-function)
     (define-key map (kbd "C-h") 'sly-documentation-lookup)
