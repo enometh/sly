@@ -6745,10 +6745,13 @@ was called originally."
 (defvar sly--this-inspector-name nil
   "Buffer-local inspector name (a string), or nil")
 
+(defvar sly-inspector-mark-stack '())
+
 (cl-defun sly-eval-for-inspector (slyfun-and-args
                                   &key (error-message "Couldn't inspect")
                                   restore-point
                                   save-selected-window
+				  operation
                                   (inspector-name sly--this-inspector-name)
                                   opener)
   (if (cl-some #'listp slyfun-and-args)
@@ -6756,6 +6759,16 @@ was called originally."
        "`sly-eval-for-inspector' not meant to be passed a generic form"))
   (let ((pos (and (eq major-mode 'sly-inspector-mode)
                   (sly-inspector-position))))
+    (cond ((eq operation :pop)
+	   (let ((restore-pos (pop sly-inspector-mark-stack)))
+	     (when (and restore-pos restore-point)
+	       (warn "inspector-pop: ignoring mark-stack and restore-point"))
+	     (setq pos restore-pos)
+	     (setq restore-point t)))
+	  ((eq operation :next)
+	   (push pos sly-inspector-mark-stack))
+	  (t (push pos sly-inspector-mark-stack)))
+
     (sly-eval-async `(slynk:eval-for-inspector
                       ,sly--this-inspector-name ; current inspector, if any
                       ,inspector-name   ; target inspector, if any
@@ -6895,6 +6908,7 @@ buffer should be switched to (defaults to t)"
     (when kill-hook
       (add-hook 'kill-buffer-hook kill-hook t t))
     (set (make-local-variable 'sly--this-inspector-name) inspector-name)
+    (if (= (point-min) (point-max)) (setq slime-inspector-mark-stack nil))
     (cl-destructuring-bind (&key id title content) inspected-parts
       (cl-macrolet ((fontify (face string)
                              `(sly-inspector-fontify ,face ,string)))
@@ -6961,12 +6975,14 @@ position of point in the current buffer."
   "Reinspect the previous object."
   (interactive)
   (sly-eval-for-inspector `(slynk:inspector-pop)
+			  :operation :pop
                           :error-message "No previous object"))
 
 (defun sly-inspector-next ()
   "Inspect the next object in the history."
   (interactive)
   (sly-eval-for-inspector `(slynk:inspector-next)
+			  :operation :next
                           :error-message "No next object"))
 
 (defun sly-inspector-quit (&optional reset)
