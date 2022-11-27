@@ -72,6 +72,7 @@
    gray-package-name
    preferred-communication-style
 
+   with-lock
            ))
 
 (defpackage slynk-mop
@@ -1518,6 +1519,11 @@ but that thread may hold it more than once."
    (declare (ignore lock)
             (type function function))
    (funcall function))
+
+(defmacro with-lock (lock &body body)
+  `(call-with-lock-held ,lock
+                        (lambda ()
+                          ,@body)))
 
 
 ;;;; Weak datastructures
