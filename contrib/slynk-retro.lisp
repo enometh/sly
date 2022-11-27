@@ -38,6 +38,17 @@
   (setq slynk-api:*loaded-user-init-file*
         (load-swankrcs-maybe)))
 
+#+nil
+(setf (fdefinition 'slynk::completions) #'slynk::simple-completions)
+
+#+nil
+(progn
+(setf (fdefinition 'slynk::completions) #'slynk-c-p-c::completions)
+(setf (fdefinition 'slynk::completions-for-keyword) #'slynk-c-p-c::completions-for-keyword)
+(setf (fdefinition 'slynk::completions-for-character) #'slynk-c-p-c::completions-for-character)
+(export '(slynk::completions slynk::completions-for-keyword slynk::completions-for-character) "SLYNK")
+)
+
 (provide :slynk/retro)
 
 
