@@ -124,6 +124,7 @@
 The list has the form ((VAR . VALUE) ...).  Each variable VAR will be
 bound to the corresponding VALUE.")
 
+;; XXX this reverses the direction of the bindings
 (defun call-with-bindings (alist fun)
   "Call FUN with variables bound according to ALIST.
 ALIST is a list of the form ((VAR . VAL) ...)."
