@@ -493,6 +493,7 @@ PROPERTIES specifies any default face properties."
                            (define-key map "l" 'sly-switch-to-most-recent)
 			   (define-key map "o"  'sly-switch-to-background-output)
 			   (define-key map "D" 'sly-switch-to-description)
+			   (define-key map "C" 'sly-switch-to-compilation)
 			   (define-key map "I" 'sly-switch-to-inspector)
 			   (define-key map "M" 'sly-switch-to-macroexpansion)
                            map)
@@ -6713,6 +6714,11 @@ was called originally."
   "switch to sly-description."
   (interactive)
   (pop-to-buffer (sly-buffer-name :description)))
+
+(defun sly-switch-to-compilation ()
+  "switch to sly-compilation."
+  (interactive)
+  (pop-to-buffer (sly-buffer-name :compilation)))
 
 (defun sly-switch-to-inspector (&optional inspector-name)
   "switch to sly-inspector."
