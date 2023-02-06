@@ -57,7 +57,7 @@
    (setq sly-connection-list-button-action
          #'(lambda (process)
              (let ((sly-default-connection process))
-               (sly-mrepl 'pop-to-buffer)))))
+               (sly-mrepl 'pop-to-buffer-same-window)))))
   (:on-unload
    ;; FIXME: This `:on-unload' is grossly incomplete
    ;;
@@ -1016,7 +1016,7 @@ Set `sly-auto-start' to start a lisp if there is no connection.
     (let ((sly-mrepl-pop-sylvester
            (or (eq sly-mrepl-pop-sylvester 'on-connection)
                sly-mrepl-pop-sylvester)))
-      (sly-mrepl 'pop-to-buffer))
+      (sly-mrepl 'pop-to-buffer-same-window))
     (when inferior-window
       (bury-buffer inferior-buffer)
       (with-selected-window inferior-window
@@ -1047,7 +1047,7 @@ handle to distinguish the new buffer from the existing."
     ;; the new REPL will see them.
     (sly-mrepl--save-all-histories)
     (let* ((local (sly-make-channel sly-listener-channel-methods))
-           (buffer (pop-to-buffer name))
+           (buffer (pop-to-buffer-same-window name))
            (default-directory (if (file-readable-p default-directory)
                                    default-directory
                                 (expand-file-name "~/"))))
