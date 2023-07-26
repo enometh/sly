@@ -2462,7 +2462,10 @@ or nil if nothing suitable can be found.")
 
 (defun sly-search-buffer-package ()
   (let ((case-fold-search t)
-        (regexp (concat "^[ \t]*(\\(cl:\\|common-lisp:\\)?in-package\\>[ \t']*"
+        (regexp (concat (if open-paren-in-column-0-is-defun-start
+                            "^"
+                          "^[ \t]*")
+                        "(\\(cl:\\|common-lisp:\\)?in-package\\>[ \t']*"
                         "\\([^)]+\\)[ \t]*)")))
     (save-excursion
       (when (or (re-search-backward regexp nil t)
