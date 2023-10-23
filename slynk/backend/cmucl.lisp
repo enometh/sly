@@ -17,8 +17,8 @@
   (let ((min-version #x20c))
     (assert (>= c:byte-fasl-file-version min-version)
             () "This file requires CMUCL version ~x or newer" min-version))
-
-  (require 'gray-streams))
+  (ext:without-package-locks
+      (require 'gray-streams "target:pcl/gray-streams-library.sse2f")))
 
 (import-slynk-mop-symbols :pcl '(:slot-definition-documentation))
 
