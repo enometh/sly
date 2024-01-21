@@ -360,6 +360,19 @@ in the directory of the current buffer."
 (with-eval-after-load 'sly
   (add-to-list 'sly-contribs 'sly-mk-defsystem 'append))
 
+(defun get-swank-or-slynk-evaler ()
+  (cond ((and (boundp 'sly-current-thread)
+	      sly-current-thread)
+	 'sly-eval)
+	((and (boundp 'slime-current-thread)
+	      slime-current-thread)
+	 'slime-eval)
+	((error "no slime or sly connection"))))
+
+(defun sly-require (pkg)
+  (interactive "sSystem name: ")
+  (funcall (get-swank-or-slynk-evaler) `(cl:require ',(intern (downcase pkg)))))
+
 (defun find-system (str)
   (interactive "sSystem name: ")
   (let ((evaler (cond ((and (boundp 'sly-current-thread)
