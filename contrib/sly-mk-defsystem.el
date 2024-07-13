@@ -385,6 +385,57 @@ in the directory of the current buffer."
       (when (file-exists-p path)
 	(find-file path)))))
 
+
+(cl-defun asd-hack-prompt-system-name (&optional source-dir)
+  (let* ((source-dir (or source-dir default-directory))
+	 (asd-files (directory-files source-dir nil "\\.asd$"))
+	 (names (mapcar 'file-name-sans-extension asd-files))
+	 (fallback (file-name-nondirectory
+		    (directory-file-name source-dir))))
+    (completing-read "system name: "
+		     (cl-adjoin fallback  names :test #'equal)
+		     nil
+		     nil
+		     (or (car names) fallback))))
+
+(cl-defun asd-hack-dump-defsystem-file (dest-location name source-dir)
+  (interactive
+   (let (guessed-name guessed-dir guessed-dest)
+     (list (progn
+	     (setq guessed-dir
+		   (read-directory-name "Source dir: "
+					default-directory
+					default-directory
+					t
+					))
+	     (setq guessed-name
+		   (asd-hack-prompt-system-name guessed-dir))
+	     (setq guessed-dest
+		   (file-name-concat (if (not (consp current-prefix-arg))
+					 guessed-dir
+				       "/dev/shm/")
+				     (file-name-with-extension guessed-name "system")))
+	     (read-file-name "Dest location: "
+			     (file-name-directory guessed-dest)
+			     guessed-dest
+			     nil
+			     (file-name-nondirectory guessed-dest)))
+	   guessed-name
+	   guessed-dir)))
+  (let ((form (if (not (cl-search "~" source-dir))
+		  `(make::asd-hack-dump-defsystem-file
+		    ,dest-location ,name ,source-dir)
+		`(make::asd-hack-dump-defsystem-file
+                  ,dest-location ,name
+                  (cl-user::sanitize-tilde-in-pathname
+                   (cl::namestring ,source-dir))
+                  :root-dir-form
+                  (cl::format nil "~S" ,source-dir)))))
+    (message "%S" (list 'sly-eval form))
+    (when (or (not (file-exists-p dest-location))
+	      (y-or-n-p "overwrite? "))
+      (sly-eval form "MAKE"))))
+
 (provide 'sly-mk-defsystem)
 ;;; sly-mk-defsystem.el ends here
 
