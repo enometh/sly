@@ -59,6 +59,19 @@
            (append sly-mrepl-shortcut-alist sly-mk-defsystem-shortcut-alist)))))
 
 
+(defvar *sly-mk-defsystem-lisp-extensions* (list "lisp" "system" "l" "cl")
+  "File extensions to look for when finding open Lisp files.")
+
+(defun sly-mk-defsystem--lisp-buffer-p (buffer)
+  "Check whether BUFFER refers to a Lisp buffer."
+  (member (file-name-extension (buffer-name buffer)) *sly-mk-defsystem-lisp-extensions*))
+
+
+(defun sly-mk-defsystem--current-lisp-buffers ()
+  "Traverses the current `buffer-list`, returning those buffers with a .lisp extension."
+  (cl-remove-if-not #'sly-mk-defystem--lisp-buffer-p (buffer-list)))
+
+
 ;;; Interactive functions
 
 (defun sly-mk-defsystem-load-system (&optional system)
@@ -175,26 +188,22 @@ buffer's working directory"
     (isearch-forward)))
 
 
-(defun sly-mk-defsystem-query-replace-system (_name from to &optional delimited)
-  "Run `query-replace' on an MK-DEFSYSTEM system with NAME given FROM and TO with optional DELIMITED."
-  ;; MG: Underscore added to _name to suppress an unused-lexical-arg warning that fires
-  ;; despite the var being used in the condition-case below.
+(defun sly-mk-defsystem-query-replace-system (name from to &optional delimited)
+  "Query-replace in all files of an MK-DEFYSTEM system.
+
+NAME is the MK-DEFSYSTEM's sytem name, FROM is the string to replace, TO
+its replacement, and the optional DELIMITED when true restricts
+replacements to word-delimited matches."
   (interactive (let ((system (sly-mk-defsystem-read-system-name)))
                  (cons system (sly-mk-defsystem-read-query-replace-args
                                "Query replace throughout `%s'" system))))
-  (condition-case c
-      ;; `tags-query-replace' actually uses `query-replace-regexp'
-      ;; internally.
-      (tags-query-replace (regexp-quote from) to delimited
-                          '(mapcar 'sly-from-lisp-filename
-                                   (sly-eval `(slynk-mk-defsystem:mk-defsystem-system-files ,_name))))
-    (error
-     ;; Kludge: `tags-query-replace' does not actually return but
-     ;; signals an unnamed error with the below error
-     ;; message. (<=23.1.2, at least.)
-     (unless (string-equal (error-message-string c) "All files processed")
-       (signal (car c) (cdr c)))        ; resignal
-     t)))
+  (fileloop-initialize-replace
+   (regexp-quote from) to
+   (mapcar #'sly-from-lisp-filename
+	   (sly-eval `(slynk-mk-defsystem:mk-defsystem-system-files ,name)))
+    'default
+   delimited)
+  (fileloop-continue))
 
 
 (defun sly-mk-defsystem-query-replace-system-and-dependents
@@ -341,27 +350,15 @@ in the directory of the current buffer."
     (setf sly-last-compilation-result result) ;; For interactive use
     (when sly-highlight-compiler-notes
       (sly-highlight-notes notes))
+    (when message (message "%s" message))
     ;; Conditionally show compilation log and other options defined in settings
     (run-hook-with-args 'sly-compilation-finished-hook successp notes buffer t)))
 
-    
+
 
 ;;;###autoload
 (with-eval-after-load 'sly
   (add-to-list 'sly-contribs 'sly-mk-defsystem 'append))
-
-
-
-(defun sly-mk-defsystem--lisp-buffer-p (buffer)
-  "Check whether BUFFER refers to a Lisp buffer."
-  (member (file-name-extension (buffer-name buffer)) '("lisp" "system" "l" "cl")))
-
-
-(defun sly-mk-defsystem--current-lisp-buffers ()
-  "Traverses the current `buffer-list`, returning those buffers with a .lisp extension."
-  (cl-remove-if-not #'sly-mk-defsystem--lisp-buffer-p (buffer-list)))
-
-
 
 (defun get-swank-or-slynk-evaler ()
   (cond ((and (boundp 'sly-current-thread)
