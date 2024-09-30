@@ -496,6 +496,7 @@ PROPERTIES specifies any default face properties."
 			   (define-key map "C" 'sly-switch-to-compilation)
 			   (define-key map "I" 'sly-switch-to-inspector)
 			   (define-key map "M" 'sly-switch-to-macroexpansion)
+			   (define-key map "x" 'sly-switch-to-sly-xref)
                            map)
   "A keymap for frequently used SLY shortcuts.
 Access to this keymap can be installed in in
@@ -6743,10 +6744,20 @@ was called originally."
   (interactive)
   (when (fboundp 'sly-background-output-buffer)
     (let ((buf (sly-background-output-buffer nil)))
-      (and buf (pop-to-buffer buf)))))
+      (and buf (pop-to-buffer buf t)))))
 
 (when nil
 (define-key sly-selector-map "o"  'sly-switch-to-background-output)
+)
+
+(defun sly-switch-to-sly-xref ()
+  "switch to sly-xref."
+  (interactive)
+  (pop-to-buffer
+   (sly-buffer-name :xref :connection t)))
+
+(when nil
+(define-key sly-selector-map "x" 'sly-switch-to-sly-xref)
 )
 
 
