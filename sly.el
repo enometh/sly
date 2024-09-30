@@ -4892,6 +4892,8 @@ TODO"
     (define-key map (kbd "p") 'sly-xref-prev-line)
     (define-key map (kbd ".") 'sly-xref-next-line)
     (define-key map (kbd ",") 'sly-xref-prev-line)
+    (define-key map (kbd "l") 'help-go-back)
+    (define-key map (kbd "r") 'help-go-forward)
     (define-key map (kbd "C-c C-c") 'sly-recompile-xref)
     (define-key map (kbd "C-c C-k") 'sly-recompile-all-xrefs)
 
@@ -4987,6 +4989,17 @@ source-location."
     (:error (sly-message "%s" (cadr loc)))
     ((nil))))
 
+(defun sly-xref-setup-history (item interactive-p)
+  ;; see (help-setup-xref)
+  (when help-xref-stack-item
+    (push (cons (point) help-xref-stack-item) help-xref-stack)
+    (setq help-xref-forward-stack nil))
+  (when interactive-p
+    (let ((tail (nthcdr 10 help-xref-stack)))
+      ;; Truncate the stack.
+      (if tail (setcdr tail nil))))
+  (setq help-xref-stack-item item))
+
 (defun sly-xref--show-results (xrefs _type symbol package &optional method)
   "Maybe show a buffer listing the cross references XREFS.
 METHOD is used to set `sly-xref--popup-method', which see."
@@ -4995,7 +5008,10 @@ METHOD is used to set `sly-xref--popup-method', which see."
          nil)
         (t
          (sly-with-xref-buffer (_type _symbol package)
+	   (sly-xref-setup-history (list #'sly-xref--show-results xrefs _type symbol package)
+				   current-prefix-arg)
            (sly-insert-xrefs xrefs)
+	   (help-xref--navigation-buttons)
            (setq sly-xref--popup-method method)
            (goto-char (point-min))
            (current-buffer)))))
