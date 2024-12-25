@@ -3823,6 +3823,8 @@ If called from an xref buffer, method will be `sly-xref' and
 thus also honour `sly-xref--popup-method'."
   (let* ((xref-window (selected-window))
          (xref-buffer (window-buffer xref-window)))
+    (xref--push-markers xref-buffer (point))
+
     (when (eq method 'sly-xref)
       (quit-restore-window xref-window 'bury))
     (with-current-buffer xref-buffer
