@@ -3667,7 +3667,28 @@ Return nil if there's no previous object."
                         ,form)))))
 
 (defslyfun inspector-history ()
-  (slynk-pprint-to-line (inspector-%history (current-inspector))))
+ (let ((inspector-history (inspector-%history (current-inspector))))
+  (with-output-to-string (out)
+    (let ((newest (loop for i from (1- (fill-pointer inspector-history))
+			below (1-  (array-dimension inspector-history 0))
+			if (eql :break-history (aref inspector-history (1+ i)))
+			return i)))
+      (when newest
+	(format out "--- next/prev chain ---")
+	(loop for i from newest downto 0
+	      for s = (aref inspector-history i)
+	      while (istate-p s) do
+            (let ((val (istate.object s)))
+              (format out "~%~:[  ~; *~]@~d "
+                      (eq s (current-istate))
+		      i)
+              (print-unreadable-object (val out :type t :identity t))))))
+    (format out "~%~%--- all visited objects ---")
+    (loop for s across inspector-history for i from 0
+	  for val = (istate.object s)
+	   do
+          (format out "~%~2,' d " i)
+          (print-unreadable-object (val out :type t :identity t))))))
 
 (defslyfun quit-inspector ()
   (reset-inspector)
