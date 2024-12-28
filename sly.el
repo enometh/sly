@@ -6967,24 +6967,30 @@ buffer should be switched to (defaults to t)"
         (while (eq (char-before) ?\n)
           (backward-delete-char 1))
         (insert "\n" (fontify label "--------------------") "\n")
-        (save-excursion
-          (sly-inspector-insert-content content))
+	(let ((p (point)))
+          (sly-inspector-insert-content content
+	  (lambda ()
         (when point
           (cl-check-type point cons)
           (ignore-errors
             (goto-char (point-min))
             (forward-line (1- (car point)))
-            (move-to-column (cdr point))))))
-    (buffer-disable-undo)))
+            (move-to-column (cdr point))))
+	(message "p=%s point was %s" (list p (point)) point)
+	(when nil (buffer-disable-undo)))))))
+    )))
 
 (defvar sly-inspector-limit 500)
 
-(defun sly-inspector-insert-content (content)
+(defun sly-inspector-insert-content (content &optional restore-point-cont)
   (sly-inspector-fetch-chunk
    content nil
    (lambda (chunk)
      (let ((inhibit-read-only t))
-       (sly-inspector-insert-chunk chunk t t)))))
+       (save-excursion
+	 (sly-inspector-insert-chunk chunk t t))
+       (and restore-point-cont
+	    (funcall restore-point-cont))))))
 
 (defun sly-inspector-insert-chunk (chunk prev next)
   "Insert CHUNK at point.
