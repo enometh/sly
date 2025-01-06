@@ -6483,6 +6483,7 @@ was called originally."
   (let ((name (sly-buffer-name :threads
                                :connection t)))
     (sly-with-popup-buffer (name :connection t
+				 :select t
                                  :mode 'sly-thread-control-mode)
       (sly-update-threads-buffer (current-buffer))
       (goto-char (point-min))
