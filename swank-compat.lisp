@@ -53,3 +53,9 @@
    "MAKE-OUTPUT-STREAM"
    "INSTALL-DEBUGGER-GLOBALLY"
    "FIND-DEFINITIONS")))
+
+
+#+nil
+(progn
+(cl-user:package-add-nicknames "SWANK-COMPAT" "SWANK")
+(cl-user:package-add-nicknames "SWANK-COMPAT-BACKEND" "SWANK-BACKEND"))
