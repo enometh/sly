@@ -497,6 +497,7 @@ PROPERTIES specifies any default face properties."
 			   (define-key map "I" 'sly-switch-to-inspector)
 			   (define-key map "M" 'sly-switch-to-macroexpansion)
 			   (define-key map "x" 'sly-switch-to-sly-xref)
+			   (define-key map "a" 'sly-apropos-all)
                            map)
   "A keymap for frequently used SLY shortcuts.
 Access to this keymap can be installed in in
@@ -4706,19 +4707,19 @@ arg, you're interactively asked for parameters of the search.
 With M-- (negative) prefix arg, prompt for package only. "
   (interactive
    (cond ((eq '- current-prefix-arg)
-          (list (sly-read-from-minibuffer "Apropos external symbols: ")
+          (list (sly-read-from-minibuffer "Apropos external symbols: " (sly-symbol-at-point t))
                 t
                 (sly-read-package-name "Package (blank for all): "
-                                       nil 'allow-blank)
+				       (sly-current-package) 'allow-blank)
                 nil))
          (current-prefix-arg
-          (list (sly-read-from-minibuffer "Apropos: ")
+          (list (sly-read-from-minibuffer "Apropos: " (sly-symbol-at-point t))
                 (sly-y-or-n-p "External symbols only? ")
                 (sly-read-package-name "Package (blank for all): "
-                                       nil 'allow-blank)
+                                       (sly-current-package)'allow-blank)
                 (sly-y-or-n-p "Case-sensitive? ")))
          (t
-          (list (sly-read-from-minibuffer "Apropos external symbols: ") t nil nil))))
+          (list (sly-read-from-minibuffer "Apropos external symbols: " (sly-symbol-at-point t)) t nil nil))))
   (sly-eval-async
       `(slynk-apropos:apropos-list-for-emacs ,string ,only-external-p
                                              ,case-sensitive-p ',package)
@@ -4729,7 +4730,7 @@ With M-- (negative) prefix arg, prompt for package only. "
 (defun sly-apropos-all ()
   "Shortcut for (sly-apropos <string> nil nil)"
   (interactive)
-  (sly-apropos (sly-read-from-minibuffer "Apropos all symbols: ") nil nil))
+  (sly-apropos (sly-read-from-minibuffer "Apropos all symbols: " (sly-symbol-at-point t)) nil nil))
 
 (defun sly-apropos-package (package &optional internal)
   "Show apropos listing for symbols in PACKAGE.
