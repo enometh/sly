@@ -436,6 +436,21 @@ in the directory of the current buffer."
 	      (y-or-n-p "overwrite? "))
       (sly-eval form "MAKE"))))
 
+(when nil
+  (sly-eval `(cl:let ((cl-user::a (slynk-mk-defsystem::jump-to-component-1 :cffi-libffi "~/cl/extern/cffi/libffi/libffi.lisp"))) (cl:and cl-user::a (mk::component-full-pathname cl-user::a :binary)))))
+
+(defun jump-to-fasl (sys file)
+  (interactive (list (sly-mk-defsystem-read-system-name)
+		     (ffap-read-file-or-url "dired fasl for: " buffer-file-name)))
+  (let* ((sys-k sys ;;(intern (if (eql (elt sys 0) ?:) sys (concat ":" sys)))
+		)
+	 (form `(cl:let ((cl-user::a (slynk-mk-defsystem::jump-to-component-1 ,sys-k ,file)))
+			(cl:and cl-user::a
+				(mk::component-full-pathname cl-user::a :binary))))
+	 (ret (sly-eval form)))
+    (when ret
+      (dired ret))))
+
 (provide 'sly-mk-defsystem)
 ;;; sly-mk-defsystem.el ends here
 
