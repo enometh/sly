@@ -342,4 +342,39 @@ Example:
 ;;((or asdf:compile-error #+asdf3 asdf/lisp-build:compile-file-error)
 ;; () nil)))
 
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(defun jump-to-component-1 (system file-namestring)
+  (let (src-root seen)
+    (labels ((walk (comp &aux subs)
+	       (cond ((find (mk::component-type comp) '(:file))
+		      (let ((namestring
+			     (namestring
+			      (mk::component-full-pathname
+			       comp :source))))
+			(if (equal namestring file-namestring)
+			    (return-from jump-to-component-1
+			      comp))))
+		     ((setq subs (mk::component-components comp))
+		      (mapcar #'walk subs))))
+	     (system-subdir-p (system src-root)
+	       (user::prefixp (namestring
+			       (mk::component-root-dir system :source))
+			      src-root))
+	     (doit (system)
+	       (when (and (not (find system seen))
+			  (system-subdir-p system src-root)))
+	       (push system seen)
+	       (walk system)
+	       (dolist (system (mk::component-depends-on system))
+		 (doit (mk::ensure-system system)))))
+      (setq system (mk::ensure-system system))
+      (setq src-root (namestring (mk::component-root-dir system :source)))
+      (doit system))))
+
+
 (provide 'slynk/mk-defsystem)
+
