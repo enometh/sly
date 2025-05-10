@@ -581,6 +581,8 @@ interactive command.\".")
 (defvar sly-popup-buffer-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "q") 'quit-window)
+    (define-key map (kbd "l") (lambda () (interactive) (let ((inhibit-read-only t)) (undo))))
+    (define-key map (kbd "r") (lambda () (interactive) (let ((inhibit-read-only t)) (undo-redo))))
     map))
 
 
@@ -617,7 +619,18 @@ interactive command.\".")
 
 (define-minor-mode sly-popup-buffer-mode
   "Minor mode for all read-only SLY buffers"
-  nil nil nil
+  :init-value nil
+  :lighter nil
+;; ;madhu 251209 define-minor-mode features: we cannot use :keymap
+;; here because we have defined sly-popup-buffer-mode-map
+;; elsewhere. d-m-m doc presently says "If you supply a KEYMAP argument that is not a symbol, this macro defines the variable MODE-map and gives it the value that KEYMAP specifies." this currently does not happen as documented.
+;;  :keymap
+;;  ;; allow back-forward navigation via undo, undo-redo
+;;  `((,(kbd "l") .
+;;     (lambda () (interactive) (let ((inhibit-read-only t)) (undo))))
+;;    (,(kbd "r") .
+;;     (lambda () (interactive) (let ((inhibit-read-only t)) (undo-redo))))
+;;    (,(kbd "q") . bury-buffer))
   (sly-mode 1)
   (sly-interactive-buttons-mode 1)
   (setq buffer-read-only t))
