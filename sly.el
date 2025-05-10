@@ -616,7 +616,15 @@ interactive command.\".")
 
 (define-minor-mode sly-popup-buffer-mode
   "Minor mode for all read-only SLY buffers"
-  nil nil nil
+  :init-value nil
+  :lighter nil
+  :keymap
+  ;; allow back-forward navigation via undo, undo-redo
+  `((,(kbd "l") .
+     (lambda () (interactive) (let ((inhibit-read-only t)) (undo))))
+    (,(kbd "r") .
+     (lambda () (interactive) (let ((inhibit-read-only t)) (undo-redo))))
+    (,(kbd "q") . bury-buffer))
   (sly-mode 1)
   (sly-interactive-buttons-mode 1)
   (setq buffer-read-only t))
