@@ -3769,8 +3769,7 @@ new window or frame."
         (cond ((eq method 'window)
                (display-buffer target-buffer t))
               ((eq method 'frame)
-               (let ((pop-up-frames t))
-                 (display-buffer target-buffer t)))
+              (display-buffer-other-frame target-buffer))
               ((consp method)
                (let* ((window (car method))
                       (sub-method (cdr method)))
@@ -3810,7 +3809,7 @@ new window or frame."
                                 (set-window-buffer window buffer)
                                 window))))))))
               (t
-               (switch-to-buffer target-buffer)
+               (xref--switch-to-buffer target-buffer)
                (selected-window)))))
     (when (eq method 'sly-xref)
       (setq method sly-xref--popup-method))
