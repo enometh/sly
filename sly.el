@@ -990,9 +990,9 @@ macroexpansion time.
            (set-syntax-table lisp-mode-syntax-table)
            ,@body
            (unless (eq ,select-sym :hidden)
-             (let ((window (display-buffer
+             (let ((window (pop-to-buffer-same-window
                             (current-buffer)
-			    `(nil
+			    `((display-buffer-same-window)
 			      .
 			      ((inhibit-same-window
 				.
@@ -1002,7 +1002,8 @@ macroexpansion time.
 				  t))
 			       (inhibit-switch-frame
 				.
-				,(not ,select-sym)))))))
+				,(not ,select-sym))
+			       (reuse-frames . t))))))
                (when ,select-sym
                  (if window
                      (progn
