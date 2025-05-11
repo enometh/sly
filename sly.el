@@ -992,7 +992,7 @@ macroexpansion time.
            (unless (eq ,select-sym :hidden)
              (let ((window (display-buffer
                             (current-buffer)
-			    `(nil
+			    `((display-buffer-same-window)
 			      .
 			      ((inhibit-same-window
 				.
@@ -1002,7 +1002,8 @@ macroexpansion time.
 				  t))
 			       (inhibit-switch-frame
 				.
-				,(not ,select-sym)))))))
+				,(not ,select-sym))
+			       (reuse-frames . t))))))
                (when ,select-sym
                  (if window
                      (progn
