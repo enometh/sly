@@ -6545,7 +6545,7 @@ was called originally."
     (let ((new-line (cl-position old-thread-id (cdr threads)
                                  :key #'car :test #'equal)))
       (goto-char (point-min))
-      (forward-line (or new-line old-line))
+      (forward-line (1- (or new-line old-line)))
       (move-to-column old-column)
       (sly-move-point (point)))))
 
@@ -7740,7 +7740,7 @@ as nil.  With non-nil STRINGP, only look for strings"
                    (not (eq (syntax-class (syntax-after (car bounds)))
                             (char-syntax ?\"))))
           (if (and interactive
-                   errorp)
+                   interactive)
               (user-error "No string at point")
             (throw 'return nil)))
         (when interactive
