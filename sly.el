@@ -3753,8 +3753,11 @@ Several kinds of locations are supported:
  (defvar sly-xref--popup-method nil
    "Helper for `sly--display-source-location'"))
 
+;; (method (if (display-graphic-p) 'frame 'window))
+
 (cl-defun sly--display-source-location (source-location
-                                        &optional noerror (method 'window))
+                                        &optional noerror method
+					)
   "Display SOURCE-LOCATION in a window according to METHOD.
 Highlight the resulting sexp. Return the window or raise an
 error, unless NOERROR is nil, in which case return nil.  METHOD
@@ -4122,6 +4125,10 @@ new frame."
   (interactive (list (or (and (not current-prefix-arg)
                               (sly-symbol-at-point t))
                          (sly-read-symbol-name "Edit Definition of: "))))
+  (unless (or t method)
+    (when (not sly-xref--popup-method)
+      (setq method
+	    (if (eql current-prefix-arg 16) 'frame 'window))))
   ;; The hooks might search for a name in a different manner, so don't
   ;; ask the user if it's missing before the hooks are run
   (let ((xrefs (mapcan 'sly-postprocess-xref (sly-eval `(slynk:find-definitions-for-emacs ,name)))))
