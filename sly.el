@@ -1007,8 +1007,10 @@ macroexpansion time.
                (when ,select-sym
                  (if window
                      (progn
-		       (select-window window t)
-		       (select-frame-set-input-focus (window-frame window)))
+		       (when (window-live-p window)
+			 (select-window window t))
+		       (when (window-valid-p window)
+		       (select-frame-set-input-focus (window-frame window))))
 		   )))
              (if (eq ,select-sym :raise) (raise-frame (window-frame window))))
            (current-buffer))))))
