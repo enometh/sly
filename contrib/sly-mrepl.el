@@ -975,6 +975,8 @@ arglist for the most recently enclosed macro or function."
 (put 'sly-mrepl-next-input-or-button 'sly-button-navigation-command t)
 (put 'sly-mrepl-previous-input-or-button 'sly-button-navigation-command t)
 
+(defvar sly-mrepl-start-in-background t)
+
 ;;;###autoload
 (defun sly-mrepl (&optional display-action)
   "Find or create the first useful REPL for the default connection.
@@ -996,6 +998,9 @@ Set `sly-auto-start' to start a lisp if there is no connection.
 				      (raise-frame (window-frame w))
 				      (select-frame-set-input-focus (window-frame w)))
 			   (switch-to-buffer buf))))))
+  (unless (eql this-command 'sly-mrepl)
+    (when sly-mrepl-start-in-background
+      (setq display-action nil)))
   (let* ((default-directory "~")
 	 (interactive-p (called-interactively-p 'any )))
     ;; (call-interactively-p retard-p retard! edebug retard!)
@@ -1022,7 +1027,8 @@ Set `sly-auto-start' to start a lisp if there is no connection.
       (with-selected-window inferior-window
 	(when (not (one-window-p))
 	  (delete-window inferior-window))))
-    (goto-char (point-max))))
+    (unless sly-mrepl-start-in-background
+      (goto-char (point-max)))))
 
 (defun sly-mrepl-new (connection &optional handle)
   "Create and setup a new REPL buffer for CONNECTION.
@@ -1047,7 +1053,9 @@ handle to distinguish the new buffer from the existing."
     ;; the new REPL will see them.
     (sly-mrepl--save-all-histories)
     (let* ((local (sly-make-channel sly-listener-channel-methods))
-           (buffer (pop-to-buffer name))
+           (buffer (if sly-mrepl-start-in-background
+		       (get-buffer-create name)
+		     (pop-to-buffer name)))
            (default-directory (if (file-readable-p default-directory)
                                    default-directory
                                 (expand-file-name "~/"))))
