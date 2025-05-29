@@ -7,6 +7,14 @@
 (require 'cl-lib)
 (require 'comint)
 
+(defvar sly-mrepl-start-in-background t)
+
+(defun sly-mrepl--goto-connection (process)
+  "Switch to the REPL buffer for the connection at point."
+  (let ((sly-default-connection process)
+	(sly-mrepl-start-in-background nil))
+    (sly-mrepl 'pop-to-buffer)))
+
 (define-sly-contrib sly-mrepl
   "Multiple REPLs."
   (:license "GPL")
@@ -54,10 +62,7 @@
    (add-hook 'sly-net-process-close-hooks 'sly-mrepl--teardown-repls)
    ;; The connection list is also tweaked
    ;;
-   (setq sly-connection-list-button-action
-         (lambda (process)
-           (let ((sly-default-connection process))
-             (sly-mrepl 'pop-to-buffer)))))
+   (setq sly-connection-list-button-action 'sly-mrepl--goto-connection))
   (:on-unload
    ;; FIXME: This `:on-unload' is grossly incomplete
    ;;
@@ -996,6 +1001,9 @@ Set `sly-auto-start' to start a lisp if there is no connection.
 				      (raise-frame (window-frame w))
 				      (select-frame-set-input-focus (window-frame w)))
 			   (switch-to-buffer buf))))))
+  (unless (eql this-command 'sly-mrepl)
+    (when sly-mrepl-start-in-background
+      (setq display-action nil)))
   (let* ((default-directory "~")
 	 (interactive-p (called-interactively-p 'any )))
     ;; (call-interactively-p retard-p retard! edebug retard!)
@@ -1022,7 +1030,8 @@ Set `sly-auto-start' to start a lisp if there is no connection.
       (with-selected-window inferior-window
 	(when (not (one-window-p))
 	  (delete-window inferior-window))))
-    (goto-char (point-max))))
+    (unless sly-mrepl-start-in-background
+      (goto-char (point-max)))))
 
 (defun sly-mrepl-new (connection &optional handle)
   "Create and setup a new REPL buffer for CONNECTION.
@@ -1047,7 +1056,9 @@ handle to distinguish the new buffer from the existing."
     ;; the new REPL will see them.
     (sly-mrepl--save-all-histories)
     (let* ((local (sly-make-channel sly-listener-channel-methods))
-           (buffer (pop-to-buffer name))
+           (buffer (if sly-mrepl-start-in-background
+		       (get-buffer-create name)
+		     (pop-to-buffer name)))
            (default-directory (if (file-readable-p default-directory)
                                   default-directory
                                 (expand-file-name "~/"))))
