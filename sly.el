@@ -4471,9 +4471,11 @@ Use `sly-re-evaluate-defvar' if the from starts with '(defvar'"
 (defun sly-eval-region (start end)
   "Evaluate region."
   (interactive "r")
-  (sly-eval-with-transcript
-   `(slynk:interactive-eval-region
-     ,(buffer-substring-no-properties start end))))
+  (if current-prefix-arg
+      (sly-compile-region start end)
+    (sly-eval-with-transcript
+     `(slynk:interactive-eval-region
+       ,(buffer-substring-no-properties start end)))))
 
 (defun sly-pprint-eval-region (start end)
   "Evaluate region; pprint the value in a buffer."
