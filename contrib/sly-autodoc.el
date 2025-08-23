@@ -177,7 +177,8 @@ return a non-nil non-string value when the update is arranged."
   (and (cl-letf (((symbol-function 'sly-inside-string-or-comment-p)
 		  (function sly-inside-string-p)))
 	 (not (sly-inside-string-or-comment-p)))
-       (sly-parse-form-upto-point sly-autodoc-accuracy-depth)))
+       (let ((sly-forward-cruft-ignore-suppressed-reader-conditionals nil))
+	 (sly-parse-form-upto-point sly-autodoc-accuracy-depth))))
 
 (defun sly-autodoc--async (context multilinep callback)
   (sly-eval-async
