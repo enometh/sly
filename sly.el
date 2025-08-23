@@ -7615,11 +7615,16 @@ and skips comments."
         ;; skip this sexp
         (sly-forward-sexp)))))
 
+(defvar sly-forward-cruft-ignore-suppressed-reader-conditionals t
+  "if non-NIL sly-forwars-cruft will skip over suppressed reader
+conditionals.")
+
 (defun sly-forward-cruft ()
   "Move forward over whitespace, comments, reader conditionals."
   (while (sly-point-moves-p (skip-chars-forward " \t\n")
                             (forward-comment (buffer-size))
-                            (sly-forward-reader-conditional))))
+			    (and sly-forward-cruft-ignore-suppressed-reader-conditionals
+				 (sly-forward-reader-conditional)))))
 
 (defun sly-keywordify (symbol)
   "Make a keyword out of the symbol SYMBOL."
