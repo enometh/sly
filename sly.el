@@ -860,6 +860,18 @@ move to make TARGET visible."
   (when sly-truncate-lines
     (set (make-local-variable 'truncate-lines) t)))
 
+;;; ;madhu 250909, handle use case:
+;;; (sly-read-package-name "foo " (sly-find-buffer-package))
+;;; when SLY-FIND-BUFFER-PACKAGE returns a quoted string, we should
+;;; unquote it before passing it to sly-read-package-name.
+
+(defun sly-unquote-string (str)
+  (cond ((and (> (length str) 0)
+	      (eql (elt str 0) ?\")
+              (eql (elt str (1- (length str))) ?\"))
+	 (car (read-from-string str)))
+	(t str)))
+
 ;; Interface
 (defun sly-read-package-name (prompt &optional initial-value allow-blank)
   "Read a package name from the minibuffer, prompting with PROMPT.
@@ -870,7 +882,7 @@ selected."
                (concat "[sly] " prompt)
                (sly-eval
                 `(slynk:list-all-package-names t))
-               nil (not allow-blank) initial-value)))
+               nil (not allow-blank) (sly-unquote-string initial-value))))
     (unless (zerop (length res))
       res)))
 
