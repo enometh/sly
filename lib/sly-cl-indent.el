@@ -1202,7 +1202,10 @@ environment\\|more\
             (and (symbolp tem)        ;a function to call to do the work.
                  (null (cdr method)))
             (sly--lisp-indent-report-bad-format method))
-        (cond ((eq tem '&body)
+        (cond ((and tail (not (or (consp tem) (symbolp tem))))
+	       ;; indent tail of &rest in same way as first elt of rest
+	       (throw 'exit normal-indent))
+	      ((eq tem '&body)
                ;; &body means (&rest <lisp-body-indent>)
                (throw 'exit
                       (if (null p)
