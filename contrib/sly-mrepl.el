@@ -7,6 +7,12 @@
 (require 'cl-lib)
 (require 'comint)
 
+(defun sly-mrepl--goto-connection (process)
+  "Switch to the REPL buffer for the connection at point."
+  (let ((sly-default-connection process)
+	(sly-mrepl-start-in-background nil))
+    (sly-mrepl 'pop-to-buffer)))
+
 (define-sly-contrib sly-mrepl
   "Multiple REPLs."
   (:license "GPL")
@@ -54,10 +60,7 @@
    (add-hook 'sly-net-process-close-hooks 'sly-mrepl--teardown-repls)
    ;; The connection list is also tweaked
    ;;
-   (setq sly-connection-list-button-action
-         #'(lambda (process)
-             (let ((sly-default-connection process))
-               (sly-mrepl 'pop-to-buffer)))))
+   (setq sly-connection-list-button-action 'sly-mrepl--goto-connection))
   (:on-unload
    ;; FIXME: This `:on-unload' is grossly incomplete
    ;;
