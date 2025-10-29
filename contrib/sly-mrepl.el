@@ -721,6 +721,8 @@ recent entry that is discarded."
                         sly-mrepl--dirty-history)
                (sly-mrepl--merge-and-save-history)))))
 
+(defvar sly-save-history-on-repl-teardown nil)
+
 (defun sly-mrepl--teardown (&optional reason dont-signal-server)
   (remove-hook 'kill-buffer-hook 'sly-mrepl--teardown t)
   (let ((inhibit-read-only t))
@@ -731,7 +733,8 @@ recent entry that is discarded."
       (unless (zerop (current-column)) (insert "\n"))
       (insert "; --------------------------------------------------------\n")
       (add-text-properties start (point) '(read-only t))))
-  (sly-mrepl--merge-and-save-history)
+  (when sly-save-history-on-repl-teardown
+    (sly-mrepl--merge-and-save-history))
   (when sly-mrepl--dedicated-stream
     (process-put sly-mrepl--dedicated-stream 'sly-mrepl--channel nil)
     (kill-buffer (process-buffer sly-mrepl--dedicated-stream)))
