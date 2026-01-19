@@ -106,13 +106,15 @@ Assigns *CURRENT-<STREAM>* for standard streams."
   (slynk::send-to-emacs `(:channel-send 2 (:write-string "foobar"))))
 (default-listener *emacs-connection*)
 (format t "foo~&")
+(format slynk::*log-output* "foobar~&")
 (format (cdr (assoc '*standard-output* (slot-value (car (slynk::listeners)) 'slynk::env)))
 	"foobar~%")
 (format *standard-output* "barf~%")
 (format (background-output-stream *emacs-connection*) "foobar~%")
 (format (slot-value (find-background-output-channel *emacs-connection*) 'output-stream)
 	"xyz~%")
-slynk::*connection
+slynk::*emacs-connection*
+(mapcar 'symbol-value *standard-output-streams*)
 #+ecl-console
 (setq *standard-output* (getf slynk-mrepl::*saved-global-streams* '*standard-output*))
 (slynk-background-output::close-channel (car (slynk::channels)))
