@@ -1352,7 +1352,13 @@ When setting this variable outside of the Customize interface,
 (defun sly-mrepl-set-package ()
   (interactive)
   (let ((package (sly-read-package-name "New package: ")))
-    (sly-mrepl--eval-for-repl `(slynk-mrepl:guess-and-set-package ,package))))
+    (if sly-mrepl--remote-channel
+	(sly-mrepl--eval-for-repl
+	 `(slynk-mrepl:guess-and-set-package ,package))
+      (with-current-buffer (sly-mrepl--find-buffer (sly-current-connection))
+	(sly-mrepl--eval-for-repl
+	 `(slynk-mrepl:guess-and-set-package  ,package)
+	 :pop-to-buffer nil )))))
 
 (defun sly-mrepl-set-directory ()
   (interactive)
