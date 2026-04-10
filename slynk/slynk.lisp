@@ -522,11 +522,17 @@ corresponding values in the CDR of VALUE."
 (defun channel-thread-id (channel)
   (slynk-backend:thread-id (channel-thread channel)))
 
+(define-condition invalid-channel (error)
+  ((channel :initarg :channel :reader invalid-channel-channel))
+  (:report (lambda (c s)
+	     (format s "Cannot close invalid channel: ~a"
+		     (invalid-channel-channel c)))))
+
 (defmethod close-channel (channel &key &allow-other-keys)
   ;; (declare (ignore force))
   (let ((probe (find-channel (channel-id channel))))
     (cond (probe (setf (channels) (delete probe (channels))))
-          (t (error "Can't close invalid channel: ~a" channel)))))
+          (t (error 'invalid-channel :channel channel)))))
 
 (defgeneric channel-send (channel selector args)
   (:documentation "Send to CHANNEL the message SELECTOR with ARGS."))
@@ -759,7 +765,9 @@ recently established one."
     ((:add-connection conn)
      (push conn *connections*))
     ((:close-connection connection condition backtrace)
-     (close-connection% connection condition backtrace)
+     (handler-case
+	 (close-connection% connection condition backtrace)
+       (invalid-channel (c) nil))
      (sentinel-maybe-exit))
     ((:add-server socket port thread)
      (push (list socket port thread) *servers*))
