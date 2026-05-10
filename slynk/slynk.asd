@@ -127,3 +127,7 @@
 (defsystem :slynk/c-p-c
   :depends-on (:slynk :slynk/arglists)
   :components ((:file "../contrib/slynk-c-p-c")))
+
+(defsystem :slynk/mk-defsystem
+  :depends-on (:slynk)
+  :components ((:file "../contrib/slynk-mk-defsystem")))
