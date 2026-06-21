@@ -7800,6 +7800,16 @@ can be found."
                t)))
           (t t))))
 
+(cl-defun sly-input-complete-p (start end)
+  "Return t if the region from START to END contains a complete sexp."
+  (not
+   (save-excursion
+     (goto-char start)
+     (condition-case data
+	 (scan-sexps start end)
+       (scan-error () t)
+       (error t)))))
+
 
 ;;;; sly.el in pretty colors
 
