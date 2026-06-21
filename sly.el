@@ -2238,12 +2238,17 @@ Respect `sly-keep-buffers-on-connection-close'."
 
 (defun sly-prompt-for-connection (&optional prompt connections dont-require-match)
   (let* ((connections (or connections (sly--purge-connections)))
-         (connection-names (cl-loop for process in
-                                    (sort connections
+	 (current (sly-current-connection))
+         (connection-names
+	  (cl-loop with i = 0
+		   for process in
+                                    (sort (copy-list connections)
                                           (lambda (p1 _p2)
-                                              (eq p1 (sly-current-connection))))
-                                    collect (sly-connection-name process)))
-         (connection-names (if dont-require-match
+                                              (eq p1 current)))
+                                    collect (or (sly-connection-name process)
+						(format "nil"))))
+         (connection-names (if (and  dont-require-match
+				     (stringp dont-require-match))
                                (cons dont-require-match
                                      connection-names)
                              connection-names))
