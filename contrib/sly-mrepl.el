@@ -102,6 +102,7 @@ for output printed to the REPL (not for evaluation results)")
     (define-key map (kbd "C-M-p")     'sly-button-backward)
     (define-key map (kbd "C-M-n")     'sly-button-forward)
     (define-key map "\er" 	  'comint-history-isearch-backward-regexp)
+    (define-key map (kbd ")")       'sly-mrepl-jrm-electric-close-paren)
     map))
 
 (defvar sly-mrepl-pop-sylvester 'on-connection)
@@ -963,6 +964,48 @@ arglist for the most recently enclosed macro or function."
         (t
          (newline-and-indent)
          (sly-message "Input not complete"))))
+
+;; madhu 260502 Xref: news.gmane.io gwene.org.lisp.planet.rss20:2648
+;; implement both jrm's suggestion
+;; <http://funcall.blogspot.com/2026/05/echoes-of-lisp-listener.html>
+;; madhu 071115 and prior art
+;; <URL:http://www.eurogaran.com/downloads/lisp/emacs/lispmstyle.el>
+;; <URL:http://paste.lisp.org/display/50883>
+
+(defcustom sly-mrepl-jrm-electric-close-paren-enabled 'eurogaran
+  "If non-NIL and the closing paren being written completes a sexp,
+ it is sent for evaluation without using the return key.  If non-NIL
+should be one of JRM or EUROGARAN which determines the strategy"
+  :options '(nil eurogaran jrm)
+  :type '(choice (const :tag "Do not enable" nil)
+		 (const :tag "Strategy uses syntax ppps (jrm)" jrm)
+		 (const :tag "Strategy checks for unbalanced pares- (eurogaran)" eurogaran))
+  :group 'sly)
+
+(cl-defun sly-mrepl-jrm-electric-close-paren ()
+  "Insert ')' and auto-send ONLY if we are closing a top-level Lisp form."
+  (interactive)
+  (insert ")")
+  (cl-case sly-mrepl-jrm-electric-close-paren-enabled
+    (nil (return-from sly-mrepl-jrm-electric-close-paren nil))
+    (eurogaran
+     (if (sly-input-complete-p
+		     (sly-mrepl--mark) ;; or (comint-line-beginning-position)
+		     (point))
+		    (sly-mrepl-return)))
+    (jrm
+     (let ((state (syntax-ppss)))
+       ;; Safety checks:
+       ;; 1. We were at depth 1 (so we are now at depth 0)
+       ;; 2. We aren't in a string or comment
+       ;; 3. The input actually starts with a paren (it's a form, not a sentence)
+       (when (and (= (car state) 1)
+		  (not (nth 3 state))
+		  (not (nth 4 state))
+		  (string-match-p "^\\s-*("
+				  (buffer-substring-no-properties (sly-mrepl--mark) (point))))
+	 (sly-mrepl-return))))))
+
 
 (defun sly-mrepl-previous-input-or-button (n)
   (interactive "p")
