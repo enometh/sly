@@ -6722,7 +6722,7 @@ was called originally."
 
 (defun sly-update-connection-list ()
   (interactive)
-  (set (make-local-variable 'tabulated-list-entries)
+  (setq tabulated-list-entries
        (mapcar
         (lambda (p)
             (list p
