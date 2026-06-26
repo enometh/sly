@@ -7807,9 +7807,9 @@ can be found."
   "Return t if the region from START to END contains a complete sexp."
   (not
    (save-excursion
-     (goto-char start)
      (condition-case data
-	 (scan-sexps start end)
+	 (scan-sexps (if (fixnump start) start (marker-position start))
+		     (if (fixnump end) end (marker-position end)))
        (scan-error () t)
        (error t)))))
 
