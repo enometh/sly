@@ -1169,6 +1169,7 @@ point the thread terminates and CHANNEL is closed."
                    (when (eq (process-requests nil)
                              'listener-teardown)
                      (return))))))
+	 (warn "spawn-channel-tread: closing ~S" channel)
          (close-channel channel))))
    :name (with-slots (id name) channel
            (format nil "sly-channel-~a-~a" id name))))
