@@ -1215,7 +1215,9 @@ point the thread terminates and CHANNEL is closed."
               (type-of condition)
               (connection-communication-style c)))
     (finish-output *log-output*)
-    (log-event "close-connection ~a ... done.~%" condition)))
+    (log-event "close-connection ~a ... done.~%" condition))
+  (when (and *global-debugger* *debugger-hook*)
+    (setq *debugger-hook* nil)))
 
 ;;;;;; Thread based communication
 
