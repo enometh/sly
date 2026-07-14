@@ -1392,9 +1392,9 @@ When setting this variable outside of the Customize interface,
     ("set package"    . sly-mrepl-set-package)))
 
 
-(defun sly-mrepl-set-package ()
-  (interactive)
-  (let ((package (sly-read-package-name "New package: ")))
+(defun sly-mrepl-set-package (package)
+  (interactive (list (sly-read-package-name "New package: ")))
+  (let ()
     (if sly-mrepl--remote-channel
 	(sly-mrepl--eval-for-repl
 	 `(slynk-mrepl:guess-and-set-package ,package))
@@ -1403,10 +1403,10 @@ When setting this variable outside of the Customize interface,
 	 `(slynk-mrepl:guess-and-set-package  ,package)
 	 :pop-to-buffer nil )))))
 
-(defun sly-mrepl-set-directory ()
-  (interactive)
-  (let ((dir (read-directory-name "New directory: "
-                                  default-directory nil t)))
+(defun sly-mrepl-set-directory (dir)
+  (interactive (list (read-directory-name "New directory: "
+					  default-directory nil t)))
+  (let ()
     ;; repeats logic in `sly-cd'.
     (sly-mrepl--eval-for-repl
      `(slynk:set-default-directory
