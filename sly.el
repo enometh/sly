@@ -6139,7 +6139,7 @@ If MORE is non-nil, more frames are on the Lisp stack."
          (sly-message "%s" message)
          (ding))
         (t
-         (sly--display-source-location source-location))))))
+         (sly--display-source-location source-location nil 'window))))))
 
 
 ;;;;;; SLY-DB toggle details
