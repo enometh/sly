@@ -1430,11 +1430,11 @@ Don't execute unwind-protected sections, don't raise conditions.
   "Return the first message satisfiying PREDICATE.")
 
 (definterface wake-thread (thread)
-  "Trigger a call to CHECK-SLIME-INTERRUPTS in THREAD without using
+  "Trigger a call to CHECK-SLY-INTERRUPTS in THREAD without using
 asynchronous interrupts."
   (declare (ignore thread))
   ;; Doesn't have to implement this if RECEIVE-IF periodically calls
-  ;; CHECK-SLIME-INTERRUPTS, but that's energy inefficient
+  ;; CHECK-SLY-INTERRUPTS, but that's energy inefficient
   nil)
 
 (definterface register-thread (name thread)
@@ -1489,7 +1489,7 @@ return nil.
 
 Return :interrupt if an interrupt occurs while waiting."
   (declare (ignore streams timeout))
-  ;; Invoking the slime debugger will just endlessly loop.
+  ;; Invoking the sly debugger will just endlessly loop.
   (call-with-debugger-hook
    nil
    (lambda ()
