@@ -1747,6 +1747,7 @@ stack."
     (waitqueue  (sb-thread:make-waitqueue))
     (queue '() :type list))
 
+  ;; ;madhu 260913 backend implementing *mailboxes* leak here
   (defun mailbox (thread)
     "Return THREAD's mailbox."
     (sb-thread:with-mutex (*mailbox-lock*)

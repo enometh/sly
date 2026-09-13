@@ -856,6 +856,7 @@ SI:COMPILED-FUNCTION-FILE locations the tree under
   (semaphore (mt:make-semaphore))
   (queue '() :type list))
 
+;; ;madhu 260913 backend implementing *mailboxes* leak here
 (defun mailbox (thread)
   "Return THREAD's mailbox."
   (mt:with-lock (*mailbox-lock*)

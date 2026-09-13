@@ -937,6 +937,7 @@
     (cvar  (mp:make-condition-variable))
     (queue '() :type list))
 
+  ;; ;madhu 260913 backend implementing *mailboxes* leak here
   (defun mailbox (thread)
     "Return THREAD's mailbox."
     (mp:with-lock (*mailbox-lock*)
