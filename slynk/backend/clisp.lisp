@@ -900,6 +900,7 @@ Execute BODY with NAME's function slot set to FUNCTION."
     (waitqueue  (mp:make-exemption :name "MAILBOX.WAITQUEUE"))
     (queue '() :type list))
 
+  ;; ;madhu 260913 backend implementing *mailboxes* leak here
   (defun mailbox (thread)
     "Return THREAD's mailbox."
     (mp:with-mutex-lock (*mailboxes-lock*)

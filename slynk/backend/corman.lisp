@@ -543,6 +543,7 @@
 (defimplementation kill-thread (thread)
   (threads:terminate-thread thread 'killed))
 
+;; ;madhu 260913 backend implementing *mailboxes* leak here
 (defun mailbox (thread)
   (with-lock *mailbox-lock*
     (or (find thread *mailboxes* :key #'mailbox.thread)
