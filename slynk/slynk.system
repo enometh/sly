@@ -1,4 +1,4 @@
-;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;; -*- Mode: LISP; Package: (slynk-mk-defsystem-loader :use "CL"); BASE: 10; Syntax: ANSI-Common-Lisp; -*-
 ;;;
 ;;;   Time-stamp: <>
 ;;;   Touched: Sun Mar 10 23:39:16 2019 +0530 <enometh@net.meer>
@@ -65,7 +65,8 @@
     (funcall (read-from-string "slynk::init"))))
 
 
-(defvar *sly-sysdep-files*
+;;(eval-when (load eval compile)
+(defparameter *sly-sysdep-files*
   #+cmu '(slynk-source-path-parser slynk-source-file-cache (backend cmucl))
   #+scl '(slynk-source-path-parser slynk-source-file-cache (backend scl))
   #+sbcl '(slynk-source-path-parser slynk-source-file-cache
@@ -80,15 +81,16 @@
           (backend ecl))
   #+clasp '((backend clasp))
   #+mkcl '(slynk-source-path-parser slynk-source-file-cache
-          (backend mkcl)))
+          (backend mkcl))
+  #+genera '(slynk-source-path-parser slynk-source-file-cache metering (backend genera)));;)
 
-(defvar *sly-slynk-files*
+(defparameter *sly-slynk-files*
   `(slynk-backend ,@*sly-sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
                   slynk
 		  #+armedbear (backend abcl)
 		  slynk-completion slynk-apropos))
 
-(defvar *sly-contribs*
+(defparameter *sly-contribs*
   '((slynk slynk-util)
     (contrib slynk-arglists)
     (contrib slynk-fancy-inspector)
