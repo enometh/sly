@@ -59,22 +59,24 @@
           (backend ecl))
   #+clasp '(metering (backend clasp))
   #+mkcl '(slynk-source-path-parser slynk-source-file-cache
-          (backend mkcl)))
+          (backend mkcl))
+  #+genera '((backend genera)))
 
 (defparameter *implementation-features*
   '(:allegro :lispworks :sbcl :clozure :cmu :clisp :ccl :corman :cormanlisp
-    :armedbear :gcl :ecl :scl :mkcl :clasp))
+    :armedbear :gcl :ecl :scl :mkcl :clasp :genera))
 
 (defparameter *os-features*
   '(:macosx :linux :windows :mswindows :win32 :solaris :darwin :sunos :hpux
-    :unix))
+    :unix :genera))
 
 (defparameter *architecture-features*
   '(:powerpc :ppc :ppc64 :x86 :x86-64 :x86_64 :amd64 :i686 :i586 :i486 :pc386 :iapx386
     :sparc64 :sparc :hppa64 :hppa :arm :armv5l :armv6l :armv7l :arm64 :aarch64
     :pentium3 :pentium4
     :mips :mipsel
-    :java-1.4 :java-1.5 :java-1.6 :java-1.7))
+    :java-1.4 :java-1.5 :java-1.6 :java-1.7
+    :vlm))
 
 (defun q (s) (read-from-string s))
 
@@ -94,8 +96,8 @@
           (core:lisp-implementation-id)))
 
 (defun lisp-version-string ()
-  #+(or clozure cmu) (substitute-if #\_ (lambda (x) (find x " /"))
-                                    (lisp-implementation-version))
+  #+(or clozure cmu genera) (substitute-if #\_ (lambda (x) (find x " /"))
+                                           (lisp-implementation-version))
   #+(or cormanlisp scl mkcl) (lisp-implementation-version)
   #+sbcl (format nil "~a~:[~;-no-threads~]"
                  (lisp-implementation-version)
