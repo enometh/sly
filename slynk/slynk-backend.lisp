@@ -1538,6 +1538,11 @@ but that thread may hold it more than once."
 
 ;;;; Floating point
 
+#+genera
+(defun %handle-float-nan (float)        ; see below
+  (handler-case (not (= float float))
+    (floating-point-invalid-operation () t)))
+
 (definterface float-nan-p (float)
   "Return true if FLOAT is a NaN value (Not a Number)."
   ;; When the float type implements IEEE-754 floats, two NaN values
@@ -1545,6 +1550,8 @@ but that thread may hold it more than once."
   ;; the predicate should return false. An implementation can
   ;; implement comparison with "unordered-signaling predicates", which
   ;; emit floating point exceptions.
+  #+genera(%handle-float-nan float)
+  #-genera
   (handler-case (not (= float float))
     ;; Comparisons never signal an exception other than the invalid
     ;; operation exception (5.11 Details of comparison predicates).
