@@ -423,14 +423,20 @@ in the directory of the current buffer."
 	   guessed-name
 	   guessed-dir)))
   (let ((form (if (not (cl-search "~" source-dir))
-		  `(make::asd-hack-dump-defsystem-file
-		    ,dest-location ,name ,source-dir)
-		`(make::asd-hack-dump-defsystem-file
-                  ,dest-location ,name
-                  (cl-user::sanitize-tilde-in-pathname
-                   (cl::namestring ,source-dir))
-                  :root-dir-form
-                  (cl::format nil "~S" ,source-dir)))))
+		  `(cl:let ((cl:*default-pathname-defaults*
+			     (cl:pathname ,source-dir)))
+			   (make::asd-hack-dump-defsystem-file
+			    ,dest-location ,name ,source-dir))
+		`(cl:let* ((cl-user::sanitized-dir
+			    (cl-user::sanitize-tilde-in-pathname
+			     (cl::namestring ,source-dir)))
+			   (cl:*default-pathname-defaults*
+			    (cl:pathname cl-user::sanitized-dir)))
+			  `(make::asd-hack-dump-defsystem-file
+			    ,dest-location ,name
+			    cl-user::sanitized-dir
+			    :root-dir-form
+			    (cl::format nil "~S" ,source-dir))))))
     (message "%S" (list 'sly-eval form))
     (when (or (not (file-exists-p dest-location))
 	      (y-or-n-p "overwrite? "))
