@@ -60,7 +60,7 @@
   #+clasp '(metering (backend clasp))
   #+mkcl '(slynk-source-path-parser slynk-source-file-cache
           (backend mkcl))
-  #+genera '((backend genera)))
+  #+genera '(slynk-source-path-parser slynk-source-file-cache metering (backend genera)))
 
 (defparameter *implementation-features*
   '(:allegro :lispworks :sbcl :clozure :cmu :clisp :ccl :corman :cormanlisp

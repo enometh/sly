@@ -66,7 +66,7 @@
 
 
 ;;(eval-when (load eval compile)
-(defvar *sly-sysdep-files*
+(defparameter *sly-sysdep-files*
   #+cmu '(slynk-source-path-parser slynk-source-file-cache (backend cmucl))
   #+scl '(slynk-source-path-parser slynk-source-file-cache (backend scl))
   #+sbcl '(slynk-source-path-parser slynk-source-file-cache
@@ -82,15 +82,15 @@
   #+clasp '((backend clasp))
   #+mkcl '(slynk-source-path-parser slynk-source-file-cache
           (backend mkcl))
-  #+genera '((backend genera)));;)
+  #+genera '(slynk-source-path-parser slynk-source-file-cache metering (backend genera)));;)
 
-(defvar *sly-slynk-files*
+(defparameter *sly-slynk-files*
   `(slynk-backend ,@*sly-sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
                   slynk
 		  #+armedbear (backend abcl)
 		  slynk-completion slynk-apropos))
 
-(defvar *sly-contribs*
+(defparameter *sly-contribs*
   '((slynk slynk-util)
     (contrib slynk-arglists)
     (contrib slynk-fancy-inspector)
