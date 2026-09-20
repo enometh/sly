@@ -2240,11 +2240,13 @@ Respect `sly-keep-buffers-on-connection-close'."
   (let* ((connections (or connections (sly--purge-connections)))
 	 (current (sly-current-connection))
          (connection-names
-	  (cl-loop for process in
+	  (cl-loop with i = 0
+		   for process in
                                     (sort (copy-list connections)
                                           (lambda (p1 _p2)
                                               (eq p1 current)))
-                                    collect (sly-connection-name process)))
+                                    collect (or (sly-connection-name process)
+						(format "nil"))))
          (connection-names (if (and  dont-require-match
 				     (stringp dont-require-match))
                                (cons dont-require-match
