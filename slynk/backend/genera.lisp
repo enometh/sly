@@ -13,6 +13,30 @@
 (defimplementation getpid ()
   0) ; TODO: implement
 
+(import-to-slynk-mop '(clos-internals:class-finalized-p
+		       clos-internals::finalize-inheritance))
+
+(import-slynk-mop-symbols
+  "CLOS"
+  '("EQL-SPECIALIZER"
+    "EQL-SPECIALIZER-OBJECT"
+    "CLASS-FINALIZED-P"
+    "SLOT-DEFINITION-DOCUMENTATION"
+    "COMPUTE-APPLICABLE-METHODS-USING-CLASSES"
+    "FINALIZE-INHERITANCE"))
+
+(defmethod slynk-mop:compute-applicable-methods-using-classes (generic-function classes)
+  (values nil nil))
+
+(defun slynk-mop:slot-definition-documentation (slot)
+  (documentation slot))
+
+;; ???
+(deftype slynk-mop:eql-specializer () 'cons)
+
+(defun slynk-mop:eql-specializer-object (eql-spec)
+  (second eql-spec))
+
 (defimplementation gray-package-name ()
   "GRAY-STREAMS")
 
@@ -79,10 +103,6 @@
 (defimplementation eval-in-frame (form frame-number)
   (declare (ignore frame-number))
   (eval form))
-
-(defimplementation frame-call (frame-number)
-  (declare (ignore frame-number))
-  nil)
 
 (defimplementation print-condition (condition stream)
   (format stream "~A" condition))
