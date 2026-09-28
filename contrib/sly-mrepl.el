@@ -1059,10 +1059,11 @@ Set `sly-auto-start' to start a lisp if there is no connection.
 	   (call-interactively 'sly-connect))
 	  ((and interactive-p current-prefix-arg)
 	   (call-interactively 'sly nil (this-command-keys-vector)))
-	  (t (let ((buffer
-		    (sly-mrepl--find-create (sly-current-connection))))
-	       (when display-action
-		 (funcall display-action buffer)))))))
+	  (t (when (find 'sly-mrepl sly-contribs)
+	       (let ((buffer
+		      (sly-mrepl--find-create (sly-current-connection))))
+		 (when display-action
+		   (funcall display-action buffer))))))))
 
 (defun sly-mrepl-on-connection ()
   (let* ((inferior-buffer
