@@ -772,6 +772,19 @@ The stream calls READ-STRING when input is needed.")
 
 (defvar *auto-flush-interval* 0.2)
 
+(defun %real-output-stream (stream)
+  (etypecase stream
+    (synonym-stream
+     (%real-output-stream (synonym-stream-symbol stream)))
+    (two-way-stream
+     (%real-output-stream (two-way-stream-output-stream stream)))
+    (stream stream)
+    (symbol (cond ((boundp stream) (%real-output-stream (symbol-value stream)))
+                  #+genera
+                  ((eql stream 'tv:background-stream)
+                   (tv:allocate-background-lisp-interactor))
+                  (t (warn "%real-output-stream: sanity"))))))
+
 (defun auto-flush-loop (stream interval &optional receive)
   (loop
     (when (not (and (open-stream-p stream)
