@@ -84,6 +84,17 @@
           (backend mkcl))
   #+genera '(slynk-source-path-parser slynk-source-file-cache metering (backend genera)));;)
 
+#+slynk-generic
+(cl-user::inveigle-slynk-generic '(
+				   :ccl
+				   :sbcl :genera :lispworks
+				   )
+				 :subdir 'backend
+				 :var '*sly-sysdep-files*
+				 :file 'generic
+				 :dry-run-p nil)
+
+
 (defparameter *sly-slynk-files*
   `(slynk-backend ,@*sly-sysdep-files* #-armedbear slynk-gray slynk-match slynk-rpc
                   slynk
