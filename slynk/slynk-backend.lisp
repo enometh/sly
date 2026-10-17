@@ -15,6 +15,7 @@
   (:use cl)
   #+armedbear ; uses slynk/backend not slynk-backend
   (:nicknames "SLYNK/BACKEND")
+  (:shadow "MATCH" "ARGS")
   (:export *debug-slynk-backend*
            sly-db-condition
            compiler-condition
