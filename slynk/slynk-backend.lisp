@@ -772,18 +772,17 @@ The stream calls READ-STRING when input is needed.")
 
 (defvar *auto-flush-interval* 0.2)
 
+(defun %real-output-stream (stream)
+  (typecase stream
+    (synonym-stream
+     (%real-input-stream (symbol-value (synonym-stream-symbol stream))))
+    (two-way-stream
+     (%real-output-stream (two-way-stream-output-stream stream)))
+    (t stream)))
+
 (defun auto-flush-loop (stream interval &optional receive)
   (loop
-    (when (not (and (open-stream-p #+genera
-                                   (labels ((real-input-stream (stream)
-                                              (typecase stream
-                                                (synonym-stream
-                                                 (real-input-stream (symbol-value (synonym-stream-symbol stream))))
-                                                (two-way-stream
-                                                 (real-input-stream (two-way-stream-input-stream stream)))
-                                                (t stream))))
-                                     (real-input-stream stream))
-				   #-genera stream)
+    (when (not (and (open-stream-p stream)
                     (output-stream-p stream)))
       (return nil))
     (force-output stream)
