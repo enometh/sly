@@ -101,6 +101,7 @@ set window point to the beginning of the last output.
 	  (doit)
 	  (display-buffer (current-buffer)
 			  (cons nil (list '(inhibit-same-window . t)
+					  '(allow-no-window . t)
 					  `(inhibit-switch-frame . ,(not sly-background-autofocus)))))
 	  ;; (warn "%s" (list 'selected (selected-window) 'window window))
 	  (when (and (or (eq sly-background-output-scroll-to-bottom t)
