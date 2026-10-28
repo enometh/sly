@@ -163,6 +163,7 @@
 		       :source-pathname *sly-source-dir*
 		       :binary-pathname *sly-binary-dir*
 		       :source-extension "lisp"
+		       :depends-on (:slynk)
 		       :components (,(list :file (format nil "~(~{~A~^/~}~)" x)))))))
 	      *sly-contribs*
 	      )
