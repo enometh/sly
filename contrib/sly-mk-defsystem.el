@@ -432,7 +432,7 @@ in the directory of the current buffer."
 			     (cl::namestring ,source-dir)))
 			   (cl:*default-pathname-defaults*
 			    (cl:pathname cl-user::sanitized-dir)))
-			  `(make::asd-hack-dump-defsystem-file
+			  (make::asd-hack-dump-defsystem-file
 			    ,dest-location ,name
 			    cl-user::sanitized-dir
 			    :root-dir-form
