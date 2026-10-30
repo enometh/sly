@@ -1,3 +1,4 @@
+;;; -*- Mode: LISP; Package: (:SLYNK/GRAY :USE :CL); BASE: 10; Syntax: ANSI-Common-Lisp; indent-tabs-mode: nil; coding: latin-1-unix -*-
 ;;;; -*- Mode: lisp; indent-tabs-mode: nil -*-
 ;;;
 ;;; slynk-gray.lisp --- Gray stream based IO redirection.
