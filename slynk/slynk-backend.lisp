@@ -782,7 +782,11 @@ The stream calls READ-STRING when input is needed.")
     (symbol (cond ((boundp stream) (%real-output-stream (symbol-value stream)))
                   #+genera
                   ((eql stream 'tv:background-stream)
-                   (tv:allocate-background-lisp-interactor))
+                   (let ((ret (tv:allocate-background-lisp-interactor)))
+                     (setf (slot-value ret 'tv::deexposed-typeout-action)
+                           ;; :notify :expose :permit
+                           :expose)
+                     ret))
                   (t (warn "%real-output-stream: sanity"))))))
 
 (defun auto-flush-loop (stream interval &optional receive)
